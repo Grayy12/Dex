@@ -1,3 +1,9 @@
+# Loadstring
+
+```lua
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Grayy12/Dex/master/out.lua",true))()
+```
+
 # Intro
 New Dex was planned to be a debugging suite. Only the Explorer part is completed, probably nothing else will be.
 
