@@ -2866,7 +2866,7 @@ return search]==]
 		end
 	end
 	local _holdingAlt = false
-	local _clickPartToSelect = true
+	local _clickPartToSelect = false
 	game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
 		if gameProcessed then
 			return
