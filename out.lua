@@ -2681,21 +2681,21 @@ local EmbeddedModules = {
 				end)
 			end
 
-      for i, v in game:GetService('CoreGui'):GetDescendants() do
-        setupUIToBeClicked(v)
-      end
+      -- for i, v in game:GetService('CoreGui'):GetDescendants() do
+      --   setupUIToBeClicked(v)
+      -- end
 
-      for i, v in game:GetService('Players').LocalPlayer.PlayerGui:GetDescendants() do
-        setupUIToBeClicked(v)
-      end
+      -- for i, v in game:GetService('Players').LocalPlayer.PlayerGui:GetDescendants() do
+      --   setupUIToBeClicked(v)
+      -- end
 
-      game:GetService('CoreGui').DescendantAdded:Connect(function(v)
-        setupUIToBeClicked(v)
-      end)
+      -- game:GetService('CoreGui').DescendantAdded:Connect(function(v)
+      --   setupUIToBeClicked(v)
+      -- end)
 
-      game:GetService('Players').LocalPlayer.PlayerGui.DescendantAdded:Connect(function(v)
-        setupUIToBeClicked(v)
-      end)
+      -- game:GetService('Players').LocalPlayer.PlayerGui.DescendantAdded:Connect(function(v)
+      --   setupUIToBeClicked(v)
+      -- end)
 
 			game:GetService("UserInputService").InputEnded:Connect(function(input, gameProcessed)
 				if gameProcessed then return end
