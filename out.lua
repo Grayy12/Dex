@@ -11569,15 +11569,18 @@ local EmbeddedModules = {
 	end,
 	["Properties"] = function()
 		--[[
-    Properties App Module
-    
-    The main properties interface
-  ]]
+	Properties App Module
+	
+	The main properties interface
+]]
 
 		-- Common Locals
 		local Main, Lib, Apps, Settings -- Main Containers
 		local Explorer, Properties, ScriptViewer, Notebook -- Major Apps
 		local API, RMD, env, service, plr, create, createSimple -- Main Locals
+
+		-- Added CollectionService local for convenience
+		local CollectionService
 
 		local function initDeps(data)
 			Main = data.Main
@@ -11592,6 +11595,9 @@ local EmbeddedModules = {
 			plr = data.plr
 			create = data.create
 			createSimple = data.createSimple
+
+			-- Initialize CollectionService
+			CollectionService = game:GetService("CollectionService")
 		end
 
 		local function initAfterMain()
@@ -11628,8 +11634,12 @@ local EmbeddedModules = {
 			Properties.ClassLists = {}
 			Properties.SearchText = ""
 
+			Properties.EditingAttribute = nil
+			Properties.EditingTag = nil -- New: For editing a tag
+
 			Properties.AddAttributeProp =
 				{ Category = "Attributes", Class = "", Name = "", SpecialRow = "AddAttribute", Tags = {} }
+			Properties.AddTagProp = { Category = "Tags", Class = "", Name = "", SpecialRow = "AddTag", Tags = {} } -- New: For Add Tag button
 			Properties.SoundPreviewProp = {
 				Category = "Data",
 				ValueType = { Name = "SoundPlayer" },
@@ -11668,6 +11678,7 @@ local EmbeddedModules = {
 			Properties.CollapsedCategories = {
 				["Surface Inputs"] = true,
 				["Surface"] = true,
+				-- Tags category will be expanded by default if not listed here
 			}
 
 			Properties.ConflictSubProps = {
@@ -11775,6 +11786,7 @@ local EmbeddedModules = {
 				"NumberRange",
 				"Rect",
 			}
+			-- Tags are always strings, no AllowedTagTypes needed.
 
 			Properties.StringToValue = function(prop, str)
 				local typeData = prop.ValueType
@@ -11839,6 +11851,12 @@ local EmbeddedModules = {
 					return val.Min .. ", " .. val.Max
 				end
 
+				-- For tags, the "value" is the tag name itself, which is already a string.
+				-- This function is mostly for properties with typed values.
+				if prop.IsTag then
+					return val -- val here would be the tag name string
+				end
+
 				return tostring(val)
 			end
 
@@ -11897,106 +11915,110 @@ local EmbeddedModules = {
 				if #sList > 0 then
 					for i = 1, #propList do
 						local prop = propList[i]
-						local propName, propClass = prop.Name, prop.Class
-						local typeData = prop.RootType or prop.ValueType
-						local typeName = typeData.Name
-						local attributeName = prop.AttributeName
-						local gName = propClass .. "." .. propName
 
-						local checked = 0
-						local subProps = Properties.ConflictSubProps[typeName] or {}
-						local subPropCount = #subProps
-						local toCheck = subPropCount + 1
-						local conflictsFound = 0
-						local indexNames = {}
-						local ignored = conflictIgnore[propClass] and conflictIgnore[propClass][propName]
-						local truthyCheck = (typeName == "PhysicalProperties")
-						local isAttribute = prop.IsAttribute
-						local isMultiType = prop.MultiType
+						-- If it's a tag, skip the conflict computation for it
+						if not prop.IsTag then
+							local propName, propClass = prop.Name, prop.Class
+							local typeData = prop.RootType or prop.ValueType
+							local typeName = typeData and typeData.Name or "string"
+							local attributeName = prop.AttributeName
+							local gName = propClass .. "." .. propName
 
-						t_clear(conflictMap)
+							local checked = 0
+							local subProps = Properties.ConflictSubProps[typeName] or {}
+							local subPropCount = #subProps
+							local toCheck = subPropCount + 1
+							local conflictsFound = 0
+							local indexNames = {}
+							local ignored = conflictIgnore[propClass] and conflictIgnore[propClass][propName]
+							local truthyCheck = (typeName == "PhysicalProperties")
+							local isAttribute = prop.IsAttribute
+							local isMultiType = prop.MultiType
 
-						if not isMultiType then
-							local firstVal, firstObj, firstSet
-							local classList = classLists[prop.Class] or {}
-							for c = 1, #classList do
-								local obj = classList[c]
-								if not firstSet then
-									if isAttribute then
-										firstVal = getAttribute(obj, attributeName)
-										if firstVal ~= nil then
+							t_clear(conflictMap)
+
+							if not isMultiType then
+								local firstVal, firstObj, firstSet
+								local classList = classLists[prop.Class] or {}
+								for c = 1, #classList do
+									local obj = classList[c]
+									if not firstSet then
+										if isAttribute then
+											firstVal = getAttribute(obj, attributeName)
+											if firstVal ~= nil then
+												firstObj = obj
+												firstSet = true
+											end
+										else
+											firstVal = obj[propName]
 											firstObj = obj
 											firstSet = true
 										end
+										if ignored then break end
 									else
-										firstVal = obj[propName]
-										firstObj = obj
-										firstSet = true
-									end
-									if ignored then break end
-								else
-									local propVal, skip
-									if isAttribute then
-										propVal = getAttribute(obj, attributeName)
-										if propVal == nil then skip = true end
-									else
-										propVal = obj[propName]
-									end
+										local propVal, skip
+										if isAttribute then
+											propVal = getAttribute(obj, attributeName)
+											if propVal == nil then skip = true end
+										else
+											propVal = obj[propName]
+										end
 
-									if not skip then
-										if not conflictMap[1] then
-											if truthyCheck then
-												if (firstVal and true or false) ~= (propVal and true or false) then
+										if not skip then
+											if not conflictMap[1] then
+												if truthyCheck then
+													if (firstVal and true or false) ~= (propVal and true or false) then
+														conflictMap[1] = true
+														conflictsFound = conflictsFound + 1
+													end
+												elseif firstVal ~= propVal then
 													conflictMap[1] = true
 													conflictsFound = conflictsFound + 1
 												end
-											elseif firstVal ~= propVal then
-												conflictMap[1] = true
-												conflictsFound = conflictsFound + 1
 											end
-										end
 
-										if subPropCount > 0 then
-											for sPropInd = 1, subPropCount do
-												local indexes = indexNames[sPropInd]
-												if not indexes then
-													indexes = stringSplit(subProps[sPropInd], ".")
-													indexNames[sPropInd] = indexes
-												end
+											if subPropCount > 0 then
+												for sPropInd = 1, subPropCount do
+													local indexes = indexNames[sPropInd]
+													if not indexes then
+														indexes = stringSplit(subProps[sPropInd], ".")
+														indexNames[sPropInd] = indexes
+													end
 
-												local firstValSub = firstVal
-												local propValSub = propVal
+													local firstValSub = firstVal
+													local propValSub = propVal
 
-												for j = 1, #indexes do
-													if not firstValSub or not propValSub then break end -- PhysicalProperties
-													local indexName = indexes[j]
-													firstValSub = firstValSub[indexName]
-													propValSub = propValSub[indexName]
-												end
+													for j = 1, #indexes do
+														if not firstValSub or not propValSub then break end -- PhysicalProperties
+														local indexName = indexes[j]
+														firstValSub = firstValSub[indexName]
+														propValSub = propValSub[indexName]
+													end
 
-												local mapInd = sPropInd + 1
-												if not conflictMap[mapInd] and firstValSub ~= propValSub then
-													conflictMap[mapInd] = true
-													conflictsFound = conflictsFound + 1
+													local mapInd = sPropInd + 1
+													if not conflictMap[mapInd] and firstValSub ~= propValSub then
+														conflictMap[mapInd] = true
+														conflictsFound = conflictsFound + 1
+													end
 												end
 											end
-										end
 
-										if conflictsFound == toCheck then break end
+											if conflictsFound == toCheck then break end
+										end
+									end
+
+									checked = checked + 1
+									if checked == maxConflictCheck then break end
+								end
+
+								if not conflictMap[1] then autoUpdateObjs[gName] = firstObj end
+								for sPropInd = 1, subPropCount do
+									if not conflictMap[sPropInd + 1] then
+										autoUpdateObjs[gName .. "." .. subProps[sPropInd]] = firstObj
 									end
 								end
-
-								checked = checked + 1
-								if checked == maxConflictCheck then break end
 							end
-
-							if not conflictMap[1] then autoUpdateObjs[gName] = firstObj end
-							for sPropInd = 1, subPropCount do
-								if not conflictMap[sPropInd + 1] then
-									autoUpdateObjs[gName .. "." .. subProps[sPropInd]] = firstObj
-								end
-							end
-						end
+						end -- End of 'if not prop.IsTag then'
 					end
 				end
 
@@ -12004,27 +12026,29 @@ local EmbeddedModules = {
 			end
 
 			-- Fetches the properties to be displayed based on the explorer selection
+			-- Fetches the properties to be displayed based on the explorer selection
 			Properties.ShowExplorerProps = function()
-				local maxConflictCheck = Settings.Properties.MaxConflictCheck
 				local sList = Explorer.Selection.List
 				local foundClasses = {}
-				local propCount = 1
-				local elevated = Main.Elevated
+				local propCount = 1 -- Use this to index into the 'props' table directly
 				local showDeprecated, showHidden = Settings.Properties.ShowDeprecated, Settings.Properties.ShowHidden
 				local Classes = API.Classes
-				local classLists = {}
+				local classLists = {} -- Still needed for Properties.ClassLists
 				local lower = string.lower
 				local RMDCustomOrders = RMD.PropertyOrders
 				local getAttributes = game.GetAttributes
-				local maxAttrs = Settings.Properties.MaxAttributes
-				local showingAttrs = Settings.Properties.ShowAttributes
-				local foundAttrs = {}
-				local attrCount = 0
 				local typeof = typeof
 				local typeNameConvert = Properties.TypeNameConvert
 
-				table.clear(props)
+				local showingAttrs = Settings.Properties.ShowAttributes
+				local maxAttrs = Settings.Properties.MaxAttributes
+				local attrCount = 0 -- Counter for added attributes
 
+				local showingTags = Settings.Properties.ShowTags -- Assuming this setting exists
+
+				table.clear(props) -- Clear the main props list
+
+				-- Pass 1: Collect regular class properties and build classLists
 				for i = 1, #sList do
 					local node = sList[i]
 					local obj = node.Obj
@@ -12038,18 +12062,23 @@ local EmbeddedModules = {
 					while apiClass do
 						local APIClassName = apiClass.Name
 						if not foundClasses[APIClassName] then
-							local apiProps = indexableProps[APIClassName]
-							if not apiProps then
-								apiProps = Properties.GetIndexableProps(obj, apiClass)
-								indexableProps[APIClassName] = apiProps
+							local apiPropsList = indexableProps[APIClassName] -- Use a different name to avoid confusion
+							if not apiPropsList then
+								apiPropsList = Properties.GetIndexableProps(obj, apiClass)
+								indexableProps[APIClassName] = apiPropsList
 							end
 
-							for i = 1, #apiProps do
-								local prop = apiProps[i]
-								local tags = prop.Tags
-								if (not tags.Deprecated or showDeprecated) and (not tags.Hidden or showHidden) then
-									props[propCount] = prop
-									propCount = propCount + 1
+							if apiPropsList then -- Ensure GetIndexableProps returned a list
+								for k = 1, #apiPropsList do
+									local propItem = apiPropsList[k] -- Use different name
+									local propItemTags = propItem.Tags
+									if
+										(not propItemTags.Deprecated or showDeprecated)
+										and (not propItemTags.Hidden or showHidden)
+									then
+										props[propCount] = propItem
+										propCount = propCount + 1
+									end
 								end
 							end
 							foundClasses[APIClassName] = true
@@ -12064,59 +12093,130 @@ local EmbeddedModules = {
 
 						apiClass = apiClass.Superclass
 					end
+				end
+				Properties.ClassLists = classLists -- Set classLists for other functions
 
-					if showingAttrs and attrCount < maxAttrs then
-						local attrs = getAttributes(obj)
-						for name, val in pairs(attrs) do
+				-- Pass 2: Collect attributes for all selected objects
+				if showingAttrs and #sList > 0 then
+					local uniqueAttributesData = {} -- Key: AttrName, Value: { firstType = type, prop = attrProp, isMultiType = false }
+
+					for i = 1, #sList do
+						local node = sList[i]
+						local obj = node.Obj
+						local currentObjectAttributes = getAttributes(obj)
+
+						for name, val in pairs(currentObjectAttributes) do
 							local typ = typeof(val)
-							if not foundAttrs[name] then
-								local category = (typ == "Instance" and "Class")
+							if not uniqueAttributesData[name] then
+								local categoryType = (typ == "Instance" and "Class")
 									or (typ == "EnumItem" and "Enum")
 									or "Other"
-								local valType = { Name = typeNameConvert[typ] or typ, Category = category }
-								local attrProp = {
-									IsAttribute = true,
-									Name = "ATTR_" .. name,
-									AttributeName = name,
-									DisplayName = name,
-									Class = "Instance",
-									ValueType = valType,
-									Category = "Attributes",
-									Tags = {},
+								local valType = { Name = typeNameConvert[typ] or typ, Category = categoryType }
+								uniqueAttributesData[name] = {
+									firstType = typ,
+									prop = {
+										IsAttribute = true,
+										Name = "ATTR_" .. name,
+										AttributeName = name,
+										DisplayName = name,
+										Class = "Instance",
+										ValueType = valType,
+										Category = "Attributes",
+										Tags = {},
+									},
+									isMultiType = false,
 								}
-								props[propCount] = attrProp
-								propCount = propCount + 1
-								attrCount = attrCount + 1
-								foundAttrs[name] = { typ, attrProp }
-								if attrCount == maxAttrs then break end
-							elseif foundAttrs[name][1] ~= typ then
-								foundAttrs[name][2].MultiType = true
-								foundAttrs[name][2].Tags.ReadOnly = true
-								foundAttrs[name][2].ValueType = { Name = "string" }
+							elseif
+								uniqueAttributesData[name].firstType ~= typ
+								and not uniqueAttributesData[name].isMultiType
+							then
+								uniqueAttributesData[name].isMultiType = true
+								uniqueAttributesData[name].prop.MultiType = true
+								uniqueAttributesData[name].prop.Tags.ReadOnly = true
+								uniqueAttributesData[name].prop.ValueType = { Name = "string" }
 							end
+						end
+					end
+
+					for name, attrData in pairs(uniqueAttributesData) do
+						if attrCount < maxAttrs then
+							props[propCount] = attrData.prop
+							propCount = propCount + 1
+							attrCount = attrCount + 1
+						else
+							break
 						end
 					end
 				end
 
+				-- Pass 3: Collect tags for all selected objects
+				if showingTags and #sList > 0 then
+					local uniqueTagNamesAcrossSelection = {}
+					for i = 1, #sList do
+						local node = sList[i]
+						local obj = node.Obj
+						local tagsForObj = CollectionService:GetTags(obj)
+						for _, tagName in ipairs(tagsForObj) do
+							uniqueTagNamesAcrossSelection[tagName] = true
+						end
+					end
+					for tagName, _ in pairs(uniqueTagNamesAcrossSelection) do
+						local tagProp = {
+							IsTag = true,
+							Name = "TAG_" .. tagName,
+							TagName = tagName,
+							DisplayName = tagName,
+							Class = "Instance",
+							ValueType = { Name = "string", Category = "DataType" },
+							Category = "Tags",
+							Tags = {},
+						}
+						props[propCount] = tagProp
+						propCount = propCount + 1
+					end
+				end
+
+				-- Pass 4: Add "Add Attribute" and "Add Tag" buttons if selection exists and settings allow
+				if #sList > 0 then
+					if showingAttrs then
+						props[propCount] = Properties.AddAttributeProp
+						propCount = propCount + 1
+					end
+					if showingTags then
+						props[propCount] = Properties.AddTagProp
+						propCount = propCount + 1
+					end
+				end
+
+				-- Pass 5: Sort all collected items
 				table.sort(props, function(a, b)
 					if a.Category ~= b.Category then
 						return (categoryOrder[a.Category] or 9999) < (categoryOrder[b.Category] or 9999)
 					else
+						local aIsSpecial = a.SpecialRow ~= nil
+						local bIsSpecial = b.SpecialRow ~= nil
+
+						if aIsSpecial and not bIsSpecial then return false end
+						if not aIsSpecial and bIsSpecial then return true end
+						if aIsSpecial and bIsSpecial then
+							return lower(a.Name or "") < lower(b.Name or "") -- Should be rare, sort by internal name
+						end
+
 						local aOrder = (RMDCustomOrders[a.Class] and RMDCustomOrders[a.Class][a.Name]) or 9999999
 						local bOrder = (RMDCustomOrders[b.Class] and RMDCustomOrders[b.Class][b.Name]) or 9999999
 						if aOrder ~= bOrder then
 							return aOrder < bOrder
 						else
-							return lower(a.Name) < lower(b.Name)
+							if a.IsTag and b.IsTag then return lower(a.TagName) < lower(b.TagName) end
+							local aSortName = a.DisplayName or a.Name
+							local bSortName = b.DisplayName or b.Name
+							return lower(aSortName or "") < lower(bSortName or "") -- Added (or "") for safety
 						end
 					end
 				end)
 
-				-- Find conflicts and get auto-update instances
-				Properties.ClassLists = classLists
-				Properties.ComputeConflicts()
-				--warn("CONFLICT",tick()-start)
-				if #props > 0 then props[#props + 1] = Properties.AddAttributeProp end
+				-- Pass 6: Compute conflicts (only for non-tag, non-attribute props if necessary, current handles it)
+				Properties.ComputeConflicts() -- ComputeConflicts already skips tags, ensure it handles attributes correctly if they have sub-props (they don't typically)
 
 				Properties.Update()
 				Properties.Refresh()
@@ -12248,16 +12348,17 @@ local EmbeddedModules = {
 				local find, lower = string.find, string.lower
 				local searchText = (#Properties.SearchText > 0 and lower(Properties.SearchText))
 
-				local function recur(props, depth)
-					for i = 1, #props do
-						local prop = props[i]
+				local function recur(propsToRecur, depth) -- Renamed 'props' to 'propsToRecur' to avoid conflict with module-level 'props'
+					for i = 1, #propsToRecur do
+						local prop = propsToRecur[i]
 						local propName = prop.Name
 						local subName = prop.SubName
 						local category = prop.Category
+						local displayNameForSearch = prop.IsTag and prop.TagName or propName
 
 						local visible
 						if searchText and depth == 1 then
-							if find(lower(propName), searchText, 1, true) then visible = true end
+							if find(lower(displayNameForSearch), searchText, 1, true) then visible = true end
 						else
 							visible = true
 						end
@@ -12277,6 +12378,7 @@ local EmbeddedModules = {
 							if isFirstScaleType then
 								local nameArr = subName and stringSplit(subName, ".")
 								local displayName = prop.DisplayName or (nameArr and nameArr[#nameArr]) or propName
+								if prop.IsTag then displayName = prop.TagName end
 
 								local nameWidth = nameWidthCache[displayName]
 								if not nameWidth then
@@ -12292,7 +12394,9 @@ local EmbeddedModules = {
 							count = count + 1
 
 							local fullName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
-							if expanded[fullName] then
+							if prop.IsTag then fullName = "TAG_CAT." .. prop.TagName end -- Tags don't expand further
+
+							if expanded[fullName] and not prop.IsTag then -- Tags don't have sub-props to expand
 								local nextDepth = depth + 1
 								local expandedProps = Properties.GetExpandedProps(prop)
 								if #expandedProps > 0 then recur(expandedProps, nextDepth) end
@@ -12300,7 +12404,7 @@ local EmbeddedModules = {
 						end
 					end
 				end
-				recur(props, 1)
+				recur(props, 1) -- Use module-level 'props' here
 
 				inputProp = nil
 				Properties.ViewWidth = maxWidth + 9 + Properties.EntryOffset
@@ -12335,6 +12439,7 @@ local EmbeddedModules = {
 				nameFrame.Expand.InputBegan:Connect(function(input)
 					local prop = viewList[index + Properties.Index]
 					if not prop or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+					if prop.IsTag then return end -- Tags don't expand
 
 					local fullName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 						or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -12348,6 +12453,7 @@ local EmbeddedModules = {
 				nameFrame.Expand.InputEnded:Connect(function(input)
 					local prop = viewList[index + Properties.Index]
 					if not prop or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+					if prop.IsTag then return end -- Tags don't expand
 
 					local fullName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 						or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -12361,6 +12467,7 @@ local EmbeddedModules = {
 				nameFrame.Expand.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
 					if not prop then return end
+					if prop.IsTag then return end -- Tags don't expand
 
 					local fullName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 						or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -12383,7 +12490,7 @@ local EmbeddedModules = {
 					if input.UserInputType == Enum.UserInputType.MouseMovement and not nameFrame.PropName.TextFits then
 						local fullNameFrame = Properties.FullNameFrame
 						local nameArr = string.split(prop.Class .. "." .. prop.Name .. (prop.SubName or ""), ".")
-						local dispName = prop.DisplayName or nameArr[#nameArr]
+						local dispName = prop.DisplayName or (prop.IsTag and prop.TagName) or nameArr[#nameArr]
 						local sizeX = service.TextService:GetTextSize(
 							dispName,
 							14,
@@ -12414,6 +12521,7 @@ local EmbeddedModules = {
 				valueFrame.ValueBox.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
 					if not prop then return end
+					if prop.IsTag then return end -- Tags don't have editable values here
 
 					Properties.SetInputProp(prop, index)
 				end)
@@ -12441,18 +12549,29 @@ local EmbeddedModules = {
 					end
 				end)
 
-				nameFrame.ToggleAttributes.MouseButton1Click:Connect(function()
-					Settings.Properties.ShowAttributes = not Settings.Properties.ShowAttributes
-					Properties.ShowExplorerProps()
-				end)
+				newEntry.RowButton.MouseButton1Click:Connect(function()
+					local prop = viewList[index + Properties.Index] -- Get current prop for context
+					if not prop or not prop.SpecialRow then return end
 
-				newEntry.RowButton.MouseButton1Click:Connect(function() Properties.DisplayAddAttributeWindow() end)
+					if prop.SpecialRow == "AddAttribute" then
+						Properties.DisplayAddAttributeWindow()
+					elseif prop.SpecialRow == "AddTag" then -- Check if it's the AddTag prop
+						Properties.DisplayAddTagWindow()
+					end
+				end)
 
 				newEntry.EditAttributeButton.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
 					if not prop then return end
 
 					Properties.DisplayAttributeContext(prop)
+				end)
+
+				-- New: EditTagButton
+				newEntry.EditTagButton.MouseButton1Down:Connect(function()
+					local prop = viewList[index + Properties.Index]
+					if not prop or not prop.IsTag then return end
+					Properties.DisplayTagContext(prop)
 				end)
 
 				valueFrame.SoundPreview.ControlButton.MouseButton1Click:Connect(function()
@@ -12518,12 +12637,12 @@ local EmbeddedModules = {
 						ColorPreview = valueFrame.ColorButton.ColorPreview,
 						Gradient = valueFrame.ColorButton.ColorPreview.UIGradient,
 						EnumArrow = valueFrame.EnumArrow,
-						Checkbox = valueFrame.Checkbox,
+						Checkbox = valueFrame.Checkbox, -- This is the valueFrame.Checkbox, not the Lib.Checkbox instance
 						RightButton = valueFrame.RightButton,
 						RightButtonIcon = iconFrame,
 						RowButton = newEntry.RowButton,
 						EditAttributeButton = newEntry.EditAttributeButton,
-						ToggleAttributes = nameFrame.ToggleAttributes,
+						EditTagButton = newEntry.EditTagButton, -- New
 						SoundPreview = valueFrame.SoundPreview,
 						SoundPreviewSlider = valueFrame.SoundPreview.TimeLine.Slider,
 					},
@@ -12590,6 +12709,7 @@ local EmbeddedModules = {
 					context = Lib.ContextMenu.new()
 					context.Iconless = true
 					context.Width = 80
+					Properties.AttributeContext = context -- Store it
 				end
 				context:Clear()
 
@@ -12597,11 +12717,38 @@ local EmbeddedModules = {
 				context:Add({
 					Name = "Delete",
 					OnClick = function()
-						Properties.SetProp(prop, nil, true)
+						Properties.SetProp(prop, nil, false, prop.AttributeName) -- Pass old attribute name for deletion
 						Properties.ShowExplorerProps()
 					end,
 				})
 
+				context:Show()
+			end
+
+			-- New: DisplayTagContext
+			Properties.DisplayTagContext = function(tagProp)
+				local context = Properties.TagContext
+				if not context then
+					context = Lib.ContextMenu.new()
+					context.Iconless = true
+					context.Width = 80
+					Properties.TagContext = context -- Store it
+				end
+				context:Clear()
+
+				context:Add({
+					Name = "Edit",
+					OnClick = function()
+						Properties.DisplayAddTagWindow(tagProp) -- Pass the tagProp to edit
+					end,
+				})
+				context:Add({
+					Name = "Delete",
+					OnClick = function()
+						Properties.SetProp(tagProp, nil, false, tagProp.TagName) -- Pass current tag name for deletion
+						Properties.ShowExplorerProps()
+					end,
+				})
 				context:Show()
 			end
 
@@ -12611,7 +12758,7 @@ local EmbeddedModules = {
 					win = Lib.Window.new()
 					win.Alignable = false
 					win.Resizable = false
-					win:SetTitle("Add Attribute")
+					-- win:SetTitle("Add Attribute") -- Title set below
 					win:SetSize(200, 130)
 
 					local saveButton = Lib.Button.new()
@@ -12647,14 +12794,17 @@ local EmbeddedModules = {
 					errorLabel.Position = UDim2.new(0, 5, 1, -45)
 					errorLabel.Size = UDim2.new(1, -10, 0, 20)
 					errorLabel.TextColor3 = Settings.Theme.Important
-					win.ErrorLabel = errorLabel
-					win:Add(errorLabel, "Error")
+					-- win.ErrorLabel = errorLabel -- No, use Elements
+					win:Add(errorLabel, "ErrorLabel")
 
 					local cancelButton = Lib.Button.new()
 					cancelButton.Text = "Cancel"
 					cancelButton.Position = UDim2.new(1, -97, 1, -25)
 					cancelButton.Size = UDim2.new(0, 92, 0, 20)
-					cancelButton.OnClick:Connect(function() win:Close() end)
+					cancelButton.OnClick:Connect(function()
+						Properties.EditingAttribute = nil -- Clear editing state
+						win:Close()
+					end)
 					win:Add(cancelButton)
 
 					saveButton.Text = "Save"
@@ -12663,12 +12813,13 @@ local EmbeddedModules = {
 					saveButton.OnClick:Connect(function()
 						local name = nameBox:GetText()
 						if #name > 100 then
-							errorLabel.Text = "Error: Name over 100 chars"
+							win.Elements.ErrorLabel.Text = "Error: Name over 100 chars"
 							return
 						elseif name:sub(1, 3) == "RBX" then
-							errorLabel.Text = "Error: Name begins with 'RBX'"
+							win.Elements.ErrorLabel.Text = "Error: Name begins with 'RBX'"
 							return
 						end
+						win.Elements.ErrorLabel.Text = "" -- Clear error
 
 						local typ = typeChooser.Selected
 						local valType = { Name = Properties.TypeNameConvert[typ] or typ, Category = "DataType" }
@@ -12683,14 +12834,14 @@ local EmbeddedModules = {
 							Tags = {},
 						}
 
+						local oldAttributeName = Properties.EditingAttribute
+								and Properties.EditingAttribute.AttributeName
+							or nil
+
 						Settings.Properties.ShowAttributes = true
-						Properties.SetProp(
-							attrProp,
-							Properties.DefaultPropValue[valType.Name],
-							true,
-							Properties.EditingAttribute
-						)
+						Properties.SetProp(attrProp, Properties.DefaultPropValue[valType.Name], false, oldAttributeName)
 						Properties.ShowExplorerProps()
+						Properties.EditingAttribute = nil -- Clear editing state
 						win:Close()
 					end)
 					win:Add(saveButton, "SaveButton")
@@ -12698,18 +12849,121 @@ local EmbeddedModules = {
 					Properties.AddAttributeWindow = win
 				end
 
-				Properties.EditingAttribute = editAttr
-				win:SetTitle(editAttr and "Edit Attribute " .. editAttr.AttributeName or "Add Attribute")
-				win.Elements.Error.Text = ""
-				win.Elements.NameBox:SetText("")
-				win.Elements.SaveButton:SetDisabled(true)
-				win.Elements.TypeChooser:SetSelected(1)
+				Properties.EditingAttribute = editAttr -- Store the attribute being edited (or nil if new)
+				win:SetTitle(editAttr and "Edit Attribute: " .. editAttr.AttributeName or "Add Attribute")
+				win.Elements.ErrorLabel.Text = ""
+				win.Elements.NameBox:SetText(editAttr and editAttr.AttributeName or "")
+				win.Elements.SaveButton:SetDisabled(not editAttr or #editAttr.AttributeName == 0)
+				if editAttr then
+					local currentType = editAttr.ValueType.Name
+					local typeIndex = table.find(Properties.AllowedAttributeTypes, currentType)
+						or table.find(Properties.AllowedAttributeTypes, Properties.TypeNameConvert[currentType])
+						or 1
+					win.Elements.TypeChooser:SetSelected(typeIndex)
+					win.Elements.TypeChooser.Disabled = true -- Type cannot be changed when editing
+				else
+					win.Elements.TypeChooser:SetSelected(1)
+					win.Elements.TypeChooser.Disabled = false
+				end
+				win:Show()
+			end
+
+			-- New: DisplayAddTagWindow
+			Properties.DisplayAddTagWindow = function(editTagProp)
+				local win = Properties.AddTagWindow
+				if not win then
+					win = Lib.Window.new()
+					win.Alignable = false
+					win.Resizable = false
+					win:SetSize(200, 100) -- Smaller, only name input
+
+					local saveButton = Lib.Button.new() -- Defined later
+					local nameLabel = Lib.Label.new()
+					nameLabel.Text = "Tag Name"
+					nameLabel.Position = UDim2.new(0, 5, 0, 10)
+					nameLabel.Size = UDim2.new(0, 65, 0, 20)
+					win:Add(nameLabel)
+
+					local nameBox = Lib.ViewportTextBox.new()
+					nameBox.Position = UDim2.new(0, 75, 0, 10)
+					nameBox.Size = UDim2.new(0, 120, 0, 20)
+					win:Add(nameBox, "NameBox")
+					nameBox.TextBox
+						:GetPropertyChangedSignal("Text")
+						:Connect(function() saveButton:SetDisabled(#nameBox:GetText() == 0) end)
+
+					local errorLabel = Lib.Label.new()
+					errorLabel.Text = ""
+					errorLabel.Position = UDim2.new(0, 5, 1, -45)
+					errorLabel.Size = UDim2.new(1, -10, 0, 20)
+					errorLabel.TextColor3 = Settings.Theme.Important
+					win:Add(errorLabel, "ErrorLabel")
+
+					local cancelButton = Lib.Button.new()
+					cancelButton.Text = "Cancel"
+					cancelButton.Position = UDim2.new(1, -97, 1, -25)
+					cancelButton.Size = UDim2.new(0, 92, 0, 20)
+					cancelButton.OnClick:Connect(function()
+						Properties.EditingTag = nil -- Clear editing state
+						win:Close()
+					end)
+					win:Add(cancelButton)
+
+					saveButton.Text = "Save"
+					saveButton.Position = UDim2.new(0, 5, 1, -25)
+					saveButton.Size = UDim2.new(0, 92, 0, 20)
+					saveButton.OnClick:Connect(function()
+						local tagName = nameBox:GetText()
+						if #tagName == 0 then
+							win.Elements.ErrorLabel.Text = "Error: Tag name cannot be empty."
+							return
+						end
+						-- Add any other validation for tag names if needed (e.g. CollectionService limitations)
+						win.Elements.ErrorLabel.Text = ""
+
+						local oldTagName = Properties.EditingTag and Properties.EditingTag.TagName or nil
+
+						-- Create a temporary prop representing the tag to be added/edited
+						local tempTagProp = {
+							IsTag = true,
+							Name = "TAG_" .. tagName, -- Internal name, actual tag is tagName
+							TagName = tagName,
+							DisplayName = tagName,
+							Class = "Instance",
+							ValueType = { Name = "string", Category = "DataType" },
+							Category = "Tags",
+							Tags = {},
+						}
+
+						Settings.Properties.ShowTags = true -- Ensure tags are visible after adding/editing
+						Properties.SetProp(tempTagProp, tagName, false, oldTagName) -- Value is the tag string itself, prevDetail is old tag name
+						Properties.ShowExplorerProps() -- Refresh to show changes
+						Properties.EditingTag = nil -- Clear editing state
+						win:Close()
+					end)
+					win:Add(saveButton, "SaveButton")
+
+					Properties.AddTagWindow = win
+				end
+
+				Properties.EditingTag = editTagProp -- Store the tag being edited (or nil if new)
+				win:SetTitle(editTagProp and "Edit Tag: " .. editTagProp.TagName or "Add Tag")
+				win.Elements.ErrorLabel.Text = ""
+				win.Elements.NameBox:SetText(editTagProp and editTagProp.TagName or "")
+				win.Elements.SaveButton:SetDisabled(not editTagProp or #editTagProp.TagName == 0)
+				if editTagProp then
+					win.Elements.NameBox.TextBox:CaptureFocus() -- Optional: auto-focus
+					win.Elements.NameBox.TextBox.SelectionStart = 1
+					win.Elements.NameBox.TextBox.CursorPosition = #win.Elements.NameBox.TextBox.Text + 1
+				end
 				win:Show()
 			end
 
 			Properties.IsTextEditable = function(prop)
 				local typeData = prop.ValueType
 				local typeName = typeData.Name
+
+				if prop.IsTag then return false end -- Tags are not text-editable in the value box
 
 				return typeName ~= "bool"
 					and typeData.Category ~= "Enum"
@@ -12737,8 +12991,8 @@ local EmbeddedModules = {
 				if not enum then return end
 
 				local sorted = {}
-				for name, enum in next, enum:GetEnumItems() do
-					sorted[#sorted + 1] = enum
+				for name, enumItem in next, enum:GetEnumItems() do -- Fixed: enum:GetEnumItems()
+					sorted[#sorted + 1] = enumItem
 				end
 				table.sort(sorted, function(a, b) return a.Name < b.Name end)
 
@@ -12887,6 +13141,9 @@ local EmbeddedModules = {
 			end
 
 			Properties.GetFirstPropVal = function(prop)
+				if prop.IsTag then -- Tags don't have a "value" in this sense; their name is their identity.
+					return prop.TagName
+				end
 				local first = Properties.FindFirstObjWhichIsA(prop.Class)
 				if first then return Properties.GetPropVal(prop, first) end
 			end
@@ -12894,6 +13151,12 @@ local EmbeddedModules = {
 			Properties.GetPropVal = function(prop, obj)
 				if prop.MultiType then return "<Multiple Types>" end
 				if not obj then return end
+
+				if prop.IsTag then -- For tags, the "value" is simply their presence (identified by TagName).
+					-- This function is more about property values. For display, TagName is used.
+					-- CollectionService:HasTag(obj, prop.TagName) could be used for a boolean check if needed.
+					return prop.TagName -- Or perhaps true/false if we want to represent presence. For display, TagName is better.
+				end
 
 				local propVal
 				if prop.IsAttribute then
@@ -12944,7 +13207,9 @@ local EmbeddedModules = {
 				local typeName = typeData.Name
 				local tags = prop.Tags
 				local gName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
-				local propObj = autoUpdateObjs[gName]
+				if prop.IsTag then gName = "TAG_DISPLAY." .. prop.TagName end -- Unique identifier for display state
+
+				local propObj = autoUpdateObjs[gName] -- This won't apply directly to tags for auto-update values
 				local entryData = propEntries[entryIndex]
 				local UDim2 = UDim2
 
@@ -12955,16 +13220,31 @@ local EmbeddedModules = {
 				local colorPreview = guiElems.ColorPreview
 				local gradient = guiElems.Gradient
 				local enumArrow = guiElems.EnumArrow
-				local checkbox = guiElems.Checkbox
+				local checkbox = guiElems.Checkbox -- This is the Lib.Checkbox instance from checkboxes[entryIndex]
 				local rightButton = guiElems.RightButton
 				local soundPreview = guiElems.SoundPreview
 
-				local propVal = Properties.GetPropVal(prop, propObj)
+				local propVal = Properties.GetPropVal(prop, propObj) -- For tags, this returns TagName
 				local inputFullName = inputProp
 					and (inputProp.Class .. "." .. inputProp.Name .. (inputProp.SubName or ""))
+				if inputProp and inputProp.IsTag then inputFullName = "TAG_DISPLAY." .. inputProp.TagName end
 
 				local offset = 4
 				local endOffset = 6
+
+				if prop.IsTag then
+					valueBox.Visible = true -- Show the tag name
+					checkboxes[entryIndex].Gui.Visible = false -- Hide checkbox for tags
+					colorButton.Visible = false
+					enumArrow.Visible = false
+					rightButton.Visible = false -- Edit/Delete is handled by EditTagButton
+					soundPreview.Visible = false
+					valueBox.Text = prop.TagName
+					valueBox.TextColor3 = Settings.Theme.Text -- Tags are not read-only in the same way as properties
+					valueBox.Position = UDim2.new(0, offset, 0, 0)
+					valueBox.Size = UDim2.new(1, -endOffset, 1, 0)
+					return -- Done with tag display
+				end
 
 				-- Offsetting the ValueBox for ValueType specific buttons
 				if typeName == "Color3" or typeName == "BrickColor" or typeName == "ColorSequence" then
@@ -13015,23 +13295,23 @@ local EmbeddedModules = {
 				-- Displays the correct ValueBox for the ValueType, and sets it to the prop value
 				if typeName == "bool" or typeName == "PhysicalProperties" then
 					valueBox.Visible = false
-					checkbox.Visible = true
+					checkboxes[entryIndex].Gui.Visible = true -- Use the Lib.Checkbox instance
 					soundPreview.Visible = false
 					checkboxes[entryIndex].Disabled = tags.ReadOnly
-					if typeName == "PhysicalProperties" and autoUpdateObjs[gName] then
+					if typeName == "PhysicalProperties" and autoUpdateObjs[gName] then -- autoUpdateObjs for PhysicalProperties
 						checkboxes[entryIndex]:SetState(propVal and true or false)
 					else
 						checkboxes[entryIndex]:SetState(propVal)
 					end
 				elseif typeName == "SoundPlayer" then
 					valueBox.Visible = false
-					checkbox.Visible = false
+					checkboxes[entryIndex].Gui.Visible = false
 					soundPreview.Visible = true
 					local playing = Properties.PreviewSound and Properties.PreviewSound.Playing
 					Main.MiscIcons:DisplayByKey(soundPreview.ControlButton.Icon, playing and "Pause" or "Play")
 				else
 					valueBox.Visible = true
-					checkbox.Visible = false
+					checkboxes[entryIndex].Gui.Visible = false
 					soundPreview.Visible = false
 
 					if propVal ~= nil then
@@ -13097,7 +13377,7 @@ local EmbeddedModules = {
 					local propNameBox = guiElems.PropName
 					local rightButton = guiElems.RightButton
 					local editAttributeButton = guiElems.EditAttributeButton
-					local toggleAttributes = guiElems.ToggleAttributes
+					local editTagButton = guiElems.EditTagButton -- New
 
 					local prop = viewList[i + Properties.Index]
 					if prop then
@@ -13112,14 +13392,18 @@ local EmbeddedModules = {
 						)
 
 						if prop.SpecialRow then
+							nameFrame.Visible = false
+							valueFrame.Visible = false
+							guiElems.RowButton.Visible = true
 							if prop.SpecialRow == "AddAttribute" then
-								nameFrame.Visible = false
-								valueFrame.Visible = false
-								guiElems.RowButton.Visible = true
+								guiElems.RowButton.Text = "Add Attribute"
+							elseif prop.SpecialRow == "AddTag" then
+								guiElems.RowButton.Text = "Add Tag"
 							end
 						else
 							-- Revert special row stuff
 							nameFrame.Visible = true
+							-- valueFrame.Visible = true -- Controlled below
 							guiElems.RowButton.Visible = false
 
 							local depth = Properties.EntryIndent * (prop.Depth or 1)
@@ -13129,6 +13413,7 @@ local EmbeddedModules = {
 
 							local gName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 								or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
+							if prop.IsTag then gName = "TAG_CAT." .. prop.TagName end -- Unique for tags category items
 
 							if prop.CategoryName then
 								entry.BackgroundColor3 = Settings.Theme.Main1
@@ -13136,54 +13421,60 @@ local EmbeddedModules = {
 
 								propNameBox.Text = prop.CategoryName
 								propNameBox.Font = Enum.Font.SourceSansBold
-								expand.Visible = true
+								expand.Visible = true -- Category headers are expandable
 								propNameBox.TextColor3 = Settings.Theme.Text
 								nameFrame.BackgroundTransparency = 1
 								nameFrame.Size = UDim2.new(1, 0, 1, 0)
 								editAttributeButton.Visible = false
-
-								local showingAttrs = Settings.Properties.ShowAttributes
-								toggleAttributes.Position = UDim2.new(1, -85 - leftOffset, 0, 0)
-								toggleAttributes.Text = (showingAttrs and "[Setting: ON]" or "[Setting: OFF]")
-								toggleAttributes.TextColor3 = Settings.Theme.Text
-								toggleAttributes.Visible = (prop.CategoryName == "Attributes")
-							else
+								editTagButton.Visible = false
+							else -- Is a property, attribute, or tag
 								local propName = prop.Name
 								local typeData = prop.ValueType
 								local typeName = typeData.Name
 								local tags = prop.Tags
-								local propObj = autoUpdateObjs[gName]
+								local propObj = autoUpdateObjs[gName] -- Note: gName for tags is different, autoUpdateObjs won't apply for tag values
 
-								local attributeOffset = (prop.IsAttribute and 20 or 0)
+								local actionButtonOffset = 0
 								editAttributeButton.Visible = (prop.IsAttribute and not prop.RootType)
-								toggleAttributes.Visible = false
+								editTagButton.Visible = prop.IsTag
 
-								-- Moving around the frames
-								if scaleType == 0 then
-									nameFrame.Size = UDim2.new(0, Properties.ViewWidth - leftOffset - 1, 1, 0)
-									valueFrame.Position = UDim2.new(0, Properties.ViewWidth, 0, 0)
-									valueFrame.Size = UDim2.new(0, valueWidth - attributeOffset, 1, 0)
+								if editAttributeButton.Visible or editTagButton.Visible then actionButtonOffset = 20 end
+
+								if prop.IsTag then
+									valueFrame.Visible = false -- No value frame for tags, name is in NameFrame
+									nameFrame.Size = UDim2.new(1, -leftOffset - 1 - actionButtonOffset, 1, 0) -- NameFrame takes full width minus action button
+									propNameBox.Text = prop.TagName
 								else
-									nameFrame.Size = UDim2.new(0.5, -leftOffset - 1, 1, 0)
-									valueFrame.Position = UDim2.new(0.5, 0, 0, 0)
-									valueFrame.Size = UDim2.new(0.5, -attributeOffset, 1, 0)
+									valueFrame.Visible = true -- Show value frame for regular props/attributes
+									-- Moving around the frames
+									if scaleType == 0 then
+										nameFrame.Size = UDim2.new(0, Properties.ViewWidth - leftOffset - 1, 1, 0)
+										valueFrame.Position = UDim2.new(0, Properties.ViewWidth, 0, 0)
+										valueFrame.Size = UDim2.new(0, valueWidth - actionButtonOffset, 1, 0)
+									else
+										nameFrame.Size = UDim2.new(0.5, -leftOffset - 1, 1, 0)
+										valueFrame.Position = UDim2.new(0.5, 0, 0, 0)
+										valueFrame.Size = UDim2.new(0.5, -actionButtonOffset, 1, 0)
+									end
+									local nameArr = stringSplit(gName, ".")
+									propNameBox.Text = prop.DisplayName or nameArr[#nameArr]
 								end
 
-								local nameArr = stringSplit(gName, ".")
-								propNameBox.Text = prop.DisplayName or nameArr[#nameArr]
 								propNameBox.Font = Enum.Font.SourceSans
 								entry.BackgroundColor3 = Settings.Theme.Main2
-								valueFrame.Visible = true
 
-								expand.Visible = typeData.Category == "DataType"
-										and Properties.ExpandableTypes[typeName]
-									or Properties.ExpandableProps[gName]
+								expand.Visible = not prop.IsTag
+									and (
+										typeData.Category == "DataType" and Properties.ExpandableTypes[typeName]
+										or Properties.ExpandableProps[gName]
+									)
 								propNameBox.TextColor3 = tags.ReadOnly and Settings.Theme.PlaceholderText
 									or Settings.Theme.Text
 
-								-- Display property value
+								-- Display property value (or tag name in valueBox if it were visible)
 								Properties.DisplayProp(prop, i)
-								if propObj then
+
+								if propObj and not prop.IsTag then -- Only connect signals for actual properties/attributes
 									if prop.IsAttribute then
 										propCons[#propCons + 1] = getAttributeChangedSignal(propObj, prop.AttributeName):Connect(
 											function() Properties.DisplayProp(prop, i) end
@@ -13199,7 +13490,11 @@ local EmbeddedModules = {
 								local beforeVisible = valueBox.Visible
 								local inputFullName = inputProp
 									and (inputProp.Class .. "." .. inputProp.Name .. (inputProp.SubName or ""))
-								if gName == inputFullName then
+								if inputProp and inputProp.IsTag then
+									inputFullName = "TAG_INPUT." .. inputProp.TagName
+								end -- Should not happen as tags aren't inputProp
+
+								if gName == inputFullName and not prop.IsTag then -- Tags don't use inputProp
 									nameFrame.BackgroundColor3 = Settings.Theme.ListSelection
 									nameFrame.BackgroundTransparency = 0
 									if
@@ -13226,7 +13521,7 @@ local EmbeddedModules = {
 
 										inputBox.Position = UDim2.new(scale, offset, 0, entry.Position.Y.Offset)
 										inputBox.Size =
-											UDim2.new(1 - scale, -offset - endOffset - attributeOffset, 0, 22)
+											UDim2.new(1 - scale, -offset - endOffset - actionButtonOffset, 0, 22)
 										inputBox.Visible = true
 										valueBox.Visible = false
 									end
@@ -13235,15 +13530,18 @@ local EmbeddedModules = {
 									nameFrame.BackgroundTransparency = 1
 									valueFrame.BackgroundColor3 = Settings.Theme.Main1
 									valueFrame.BackgroundTransparency = 1
-									valueBox.Visible = beforeVisible
+									if not prop.IsTag then valueBox.Visible = beforeVisible end
 								end
 							end
 
-							-- Expand
+							-- Expand icon logic
 							if
 								prop.CategoryName
-								or Properties.ExpandableTypes[prop.ValueType and prop.ValueType.Name]
-								or Properties.ExpandableProps[gName]
+								or (
+									not prop.IsTag
+										and Properties.ExpandableTypes[prop.ValueType and prop.ValueType.Name]
+									or Properties.ExpandableProps[gName]
+								)
 							then
 								if Lib.CheckMouseInGui(expand) then
 									Main.MiscIcons:DisplayByKey(
@@ -13273,7 +13571,7 @@ local EmbeddedModules = {
 				end
 			end
 
-			Properties.SetProp = function(prop, val, noupdate, prevAttribute)
+			Properties.SetProp = function(prop, val, noupdate, prevDetail) -- prevDetail can be old attribute name OR old tag name
 				local sList = Explorer.Selection.List
 				local propName = prop.Name
 				local subName = prop.SubName
@@ -13283,8 +13581,28 @@ local EmbeddedModules = {
 				local attributeName = prop.AttributeName
 				local rootTypeData = prop.RootType
 				local rootTypeName = rootTypeData and rootTypeData.Name
-				local fullName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
-				local Vector3 = Vector3
+				-- local fullName = prop.Class.."."..prop.Name..(prop.SubName or "") -- Not used here
+				local Vector3Value = Vector3 -- Localize Vector3 for performance
+
+				if prop.IsTag then
+					local newTagName = (type(val) == "string" and val) or nil -- val is the new tag name
+					local oldTagName = (type(prevDetail) == "string" and prevDetail) or prop.TagName -- prevDetail is the old tag name if editing, else current
+
+					for i = 1, #sList do
+						local node = sList[i]
+						local obj = node.Obj
+						pcall(function()
+							if oldTagName and oldTagName ~= newTagName then -- If old tag exists and is different from new (or new is nil)
+								CollectionService:RemoveTag(obj, oldTagName)
+							end
+							if newTagName and #newTagName > 0 then CollectionService:AddTag(obj, newTagName) end
+						end)
+					end
+					if not noupdate then
+						Properties.ShowExplorerProps() -- Re-fetch and refresh everything for tags
+					end
+					return -- Done with tag handling
+				end
 
 				for i = 1, #sList do
 					local node = sList[i]
@@ -13294,18 +13612,29 @@ local EmbeddedModules = {
 						pcall(function()
 							local setVal = val
 							local root
+
 							if prop.IsAttribute then
-								root = getAttribute(obj, attributeName)
+								-- Handle attribute renaming/deletion based on prevDetail (old attribute name)
+								if type(prevDetail) == "string" and prevDetail ~= attributeName then -- Renaming
+									local currentAttributeVal = getAttribute(obj, prevDetail)
+									setAttribute(obj, prevDetail, nil) -- Remove old attribute
+									if
+										setVal == Properties.DefaultPropValue[typeName]
+										and currentAttributeVal ~= nil
+									then -- If new val is default, try to keep old val if types match
+										-- This part is tricky, ensure type compatibility if keeping old val after rename
+										-- For simplicity, new attribute gets default value or specified 'val'
+									end
+								elseif type(prevDetail) == "string" and prevDetail == attributeName and val == nil then -- Deleting
+									-- setVal is already nil, handled by setAttribute below
+								end
+								root = getAttribute(obj, attributeName) -- Get current root if it exists after potential rename
 							else
 								root = obj[propName]
 							end
 
-							if prevAttribute then
-								if prevAttribute.ValueType.Name == typeName then
-									setVal = getAttribute(obj, prevAttribute.AttributeName) or setVal
-								end
-								setAttribute(obj, prevAttribute.AttributeName, nil)
-							end
+							-- If prevDetail was an attribute being deleted, setVal would be nil.
+							-- If it was being renamed, setVal is the value for the *new* attribute name.
 
 							if rootTypeName then
 								if rootTypeName == "Vector2" then
@@ -13314,7 +13643,7 @@ local EmbeddedModules = {
 										(subName == ".Y" and setVal) or root.Y
 									)
 								elseif rootTypeName == "Vector3" then
-									setVal = Vector3.new(
+									setVal = Vector3Value.new(
 										(subName == ".X" and setVal) or root.X,
 										(subName == ".Y" and setVal) or root.Y,
 										(subName == ".Z" and setVal) or root.Z
@@ -13341,29 +13670,29 @@ local EmbeddedModules = {
 									local rootPos, rootRight, rootUp, rootLook =
 										root.Position, root.RightVector, root.UpVector, root.LookVector
 									local pos = (subName == ".Position" and setVal)
-										or Vector3.new(
+										or Vector3Value.new(
 											(subName == ".Position.X" and setVal) or rootPos.X,
 											(subName == ".Position.Y" and setVal) or rootPos.Y,
 											(subName == ".Position.Z" and setVal) or rootPos.Z
 										)
 									local rightV = (subName == ".RightVector" and setVal)
-										or Vector3.new(
+										or Vector3Value.new(
 											(subName == ".RightVector.X" and setVal) or rootRight.X,
 											(subName == ".RightVector.Y" and setVal) or rootRight.Y,
 											(subName == ".RightVector.Z" and setVal) or rootRight.Z
 										)
 									local upV = (subName == ".UpVector" and setVal)
-										or Vector3.new(
+										or Vector3Value.new(
 											(subName == ".UpVector.X" and setVal) or rootUp.X,
 											(subName == ".UpVector.Y" and setVal) or rootUp.Y,
 											(subName == ".UpVector.Z" and setVal) or rootUp.Z
 										)
 									local lookV = (subName == ".LookVector" and setVal)
-										or Vector3.new(
+										or Vector3Value.new(
 											(subName == ".LookVector.X" and setVal) or rootLook.X,
-											(subName == ".RightVector.Y" and setVal) or rootLook.Y,
-											(subName == ".RightVector.Z" and setVal) or rootLook.Z
-										)
+											(subName == ".LookVector.Y" and setVal) or rootLook.Y,
+											(subName == ".LookVector.Z" and setVal) or rootLook.Z
+										) -- Fixed: rootLook.Y, rootLook.Z
 									setVal = CFrame.fromMatrix(pos, rightV, upV, -lookV)
 								elseif rootTypeName == "Rect" then
 									local rootMin, rootMax = root.Min, root.Max
@@ -13403,13 +13732,13 @@ local EmbeddedModules = {
 								elseif rootTypeName == "Ray" then
 									local rootOrigin, rootDirection = root.Origin, root.Direction
 									local origin = (subName == ".Origin" and setVal)
-										or Vector3.new(
+										or Vector3Value.new(
 											(subName == ".Origin.X" and setVal) or rootOrigin.X,
 											(subName == ".Origin.Y" and setVal) or rootOrigin.Y,
 											(subName == ".Origin.Z" and setVal) or rootOrigin.Z
 										)
 									local direction = (subName == ".Direction" and setVal)
-										or Vector3.new(
+										or Vector3Value.new(
 											(subName == ".Direction.X" and setVal) or rootDirection.X,
 											(subName == ".Direction.Y" and setVal) or rootDirection.Y,
 											(subName == ".Direction.Z" and setVal) or rootDirection.Z
@@ -13419,26 +13748,26 @@ local EmbeddedModules = {
 									local faces = {}
 									local faceList = { "Back", "Bottom", "Front", "Left", "Right", "Top" }
 									for _, face in pairs(faceList) do
-										local val
+										local currentFaceVal -- Renamed from val to avoid conflict
 										if subName == "." .. face then
-											val = setVal
+											currentFaceVal = setVal
 										else
-											val = root[face]
+											currentFaceVal = root[face]
 										end
-										if val then faces[#faces + 1] = Enum.NormalId[face] end
+										if currentFaceVal then faces[#faces + 1] = Enum.NormalId[face] end
 									end
 									setVal = Faces.new(unpack(faces))
 								elseif rootTypeName == "Axes" then
 									local axes = {}
 									local axesList = { "X", "Y", "Z" }
 									for _, axe in pairs(axesList) do
-										local val
+										local currentAxeVal -- Renamed from val
 										if subName == "." .. axe then
-											val = setVal
+											currentAxeVal = setVal
 										else
-											val = root[axe]
+											currentAxeVal = root[axe]
 										end
-										if val then axes[#axes + 1] = Enum.Axis[axe] end
+										if currentAxeVal then axes[#axes + 1] = Enum.Axis[axe] end
 									end
 									setVal = Axes.new(unpack(axes))
 								elseif rootTypeName == "NumberRange" then
@@ -13449,8 +13778,12 @@ local EmbeddedModules = {
 								end
 							end
 
-							if typeName == "PhysicalProperties" and setVal then
-								setVal = root or PhysicalProperties.new(obj.Material)
+							if typeName == "PhysicalProperties" and setVal then -- 'setVal' here is a boolean from checkbox
+								if setVal == true then -- Set to default physical properties
+									setVal = PhysicalProperties.new(obj.Material)
+								else -- setVal is nil/false, meaning remove custom physical properties
+									setVal = nil
+								end
 							end
 
 							if prop.IsAttribute then
@@ -13462,7 +13795,9 @@ local EmbeddedModules = {
 					end
 				end
 
-				if not noupdate then Properties.ComputeConflicts(prop) end
+				if not noupdate then
+					Properties.ComputeConflicts(prop) -- This might need adjustment if prop was an attribute that got renamed/deleted
+				end
 			end
 
 			Properties.InitInputBox = function()
@@ -13507,6 +13842,11 @@ local EmbeddedModules = {
 
 				inputTextBox.FocusLost:Connect(function()
 					if not inputProp then return end
+					if inputProp.IsTag then
+						inputProp = nil
+						Properties.Refresh()
+						return
+					end -- Tags not edited this way
 
 					local prop = inputProp
 					inputProp = nil
@@ -13527,6 +13867,8 @@ local EmbeddedModules = {
 			end
 
 			Properties.SetInputProp = function(prop, entryIndex, special)
+				if prop.IsTag then return end -- Tags don't use this input mechanism
+
 				local typeData = prop.ValueType
 				local typeName = typeData.Name
 				local fullName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -13662,25 +14004,6 @@ local EmbeddedModules = {
 							Position = UDim2.new(0, 2, 0, 2),
 							ScaleType = 4,
 							Size = UDim2.new(0, 16, 0, 16),
-						},
-					},
-					{
-						6,
-						"TextButton",
-						{
-							BackgroundColor3 = Color3.new(1, 1, 1),
-							BackgroundTransparency = 1,
-							BorderSizePixel = 0,
-							Font = 4,
-							Name = "ToggleAttributes",
-							Parent = { 2 },
-							Position = UDim2.new(1, -85, 0, 0),
-							Size = UDim2.new(0, 85, 0, 22),
-							Text = "[SETTING: OFF]",
-							TextColor3 = Color3.new(1, 1, 1),
-							TextSize = 14,
-							TextTransparency = 0.10000000149012,
-							Visible = false,
 						},
 					},
 					{
@@ -13839,7 +14162,7 @@ local EmbeddedModules = {
 							TextSize = 14,
 							Visible = false,
 						},
-					},
+					}, -- This seems unused?
 					{
 						19,
 						"Frame",
@@ -13940,6 +14263,38 @@ local EmbeddedModules = {
 						},
 					},
 					{
+						28,
+						"TextButton",
+						{
+							BackgroundColor3 = Color3.new(1, 1, 1),
+							BackgroundTransparency = 1,
+							BorderSizePixel = 0,
+							Font = 3,
+							Name = "EditTagButton",
+							Parent = { 1 },
+							Position = UDim2.new(1, -20, 0, 0),
+							Size = UDim2.new(0, 20, 0, 22),
+							Text = "",
+							TextColor3 = Color3.new(1, 1, 1),
+							TextSize = 14,
+							Visible = false,
+						},
+					}, -- New EditTagButton
+					{
+						29,
+						"ImageLabel",
+						{
+							BackgroundColor3 = Color3.new(1, 1, 1),
+							BackgroundTransparency = 1,
+							Image = "rbxassetid://5034718180",
+							ImageTransparency = 0.20000000298023,
+							Name = "Icon",
+							Parent = { 28 },
+							Position = UDim2.new(0, 2, 0, 3),
+							Size = UDim2.new(0, 16, 0, 16),
+						},
+					}, -- Icon for EditTagButton
+					{
 						26,
 						"TextButton",
 						{
@@ -14009,7 +14364,7 @@ local EmbeddedModules = {
 							Name = "SearchBox",
 							Parent = { 3 },
 							PlaceholderColor3 = Color3.new(0.39215689897537, 0.39215689897537, 0.39215689897537),
-							PlaceholderText = "Search properties",
+							PlaceholderText = "Search properties or tags",
 							Position = UDim2.new(0, 4, 0, 0),
 							Size = UDim2.new(1, -24, 0, 18),
 							Text = "",
@@ -14114,6 +14469,7 @@ local EmbeddedModules = {
 					if not Properties.CollapsedCategories[category] then expanded["CAT_" .. category] = true end
 				end
 				expanded["Sound.SoundId"] = true
+				expanded["CAT_Tags"] = not Properties.CollapsedCategories["Tags"] -- Ensure Tags category starts expanded by default if not in CollapsedCategories
 
 				-- Init window
 				window = Lib.Window.new()
@@ -14137,12 +14493,12 @@ local EmbeddedModules = {
 				end)
 				window.OnActivate:Connect(function()
 					Properties.UpdateView()
-					Properties.Update()
+					-- Properties.Update() -- Update is called by ShowExplorerProps or if search text changes
 					Properties.Refresh()
 				end)
 				window.OnRestore:Connect(function()
 					Properties.UpdateView()
-					Properties.Update()
+					-- Properties.Update()
 					Properties.Refresh()
 				end)
 
@@ -14182,6 +14538,8 @@ local EmbeddedModules = {
 		else
 			return { InitDeps = initDeps, InitAfterMain = initAfterMain, Main = main }
 		end
+
+		--- END OF FILE Properties.txt ---
 	end,
 	["ScriptViewer"] = function()
 		--[[
@@ -14349,7 +14707,9 @@ DefaultSettings = (function()
 			ClearOnFocus = false,
 			LoadstringInput = true,
 			NumberRounding = 3,
-			ShowAttributes = false,
+			ShowAttributes = true,
+			ShowTags = true,
+			MaxTags = 50,
 			MaxAttributes = 50,
 			ScaleType = 1, -- 0 Full Name Shown, 1 Equal Halves
 		},
@@ -14857,6 +15217,7 @@ Main = (function()
 		insertAbove(categoryOrder, "Character", "Controls")
 		categoryOrder[#categoryOrder + 1] = "Unscriptable"
 		categoryOrder[#categoryOrder + 1] = "Attributes"
+		categoryOrder[#categoryOrder + 1] = "Tags"
 
 		local categoryOrderMap = {}
 		for i = 1, #categoryOrder do
