@@ -53,7 +53,9 @@ local EmbeddedModules = {
 			local addObject, removeObject, moveObject = nil, nil, nil
 
 			addObject = function(root)
-				if nodes[root] then return end
+				if nodes[root] then
+					return
+				end
 
 				local isNil = false
 				local rootParObj = ffa(root, "Instance")
@@ -121,10 +123,14 @@ local EmbeddedModules = {
 				local insts = getDescendants(root)
 				for i = 1, #insts do
 					local obj = insts[i]
-					if nodes[obj] then continue end -- Deferred
+					if nodes[obj] then
+						continue
+					end -- Deferred
 
 					local par = nodes[ffa(obj, "Instance")]
-					if not par then continue end
+					if not par then
+						continue
+					end
 					local newNode = { Obj = obj, Parent = par }
 					nodes[obj] = newNode
 					par[#par + 1] = newNode
@@ -140,7 +146,9 @@ local EmbeddedModules = {
 					end
 				end
 
-				if searchFunc and autoUpdateSearch then searchFunc({ newNode }) end
+				if searchFunc and autoUpdateSearch then
+					searchFunc({ newNode })
+				end
 
 				if not updateDebounce and Explorer.IsNodeVisible(par) then
 					if expanded[par] then
@@ -153,7 +161,9 @@ local EmbeddedModules = {
 
 			removeObject = function(root)
 				local node = nodes[root]
-				if not node then return end
+				if not node then
+					return
+				end
 
 				-- Nil Handling
 				if nilMap[node.Obj] then
@@ -162,14 +172,18 @@ local EmbeddedModules = {
 				end
 
 				local par = node.Parent
-				if par then par.HasDel = true end
+				if par then
+					par.HasDel = true
+				end
 
 				local function recur(root)
 					for i = 1, #root do
 						local node = root[i]
 						if not node.Del then
 							nodes[node.Obj] = nil
-							if #node > 0 then recur(node) end
+							if #node > 0 then
+								recur(node)
+							end
 						end
 					end
 				end
@@ -188,11 +202,15 @@ local EmbeddedModules = {
 
 			moveObject = function(obj)
 				local node = nodes[obj]
-				if not node then return end
+				if not node then
+					return
+				end
 
 				local oldPar = node.Parent
 				local newPar = nodes[ffa(obj, "Instance")]
-				if oldPar == newPar then return end
+				if oldPar == newPar then
+					return
+				end
 
 				-- Nil Handling
 				if not newPar then
@@ -212,7 +230,9 @@ local EmbeddedModules = {
 
 				if oldPar then
 					local parPos = table.find(oldPar, node)
-					if parPos then table.remove(oldPar, parPos) end
+					if parPos then
+						table.remove(oldPar, parPos)
+					end
 				end
 
 				node.Id = nil
@@ -302,9 +322,13 @@ local EmbeddedModules = {
 				renameBox.Parent = Explorer.Window.GuiElems.Content.List
 
 				renameBox.FocusLost:Connect(function()
-					if not renamingNode then return end
+					if not renamingNode then
+						return
+					end
 
-					pcall(function() renamingNode.Obj.Name = renameBox.Text end)
+					pcall(function()
+						renamingNode.Obj.Name = renameBox.Text
+					end)
 					renamingNode = nil
 					Explorer.Refresh()
 				end)
@@ -366,7 +390,9 @@ local EmbeddedModules = {
 			end
 
 			Explorer.NodeSorter = function(a, b)
-				if a.Del or b.Del then return false end -- Ghost node
+				if a.Del or b.Del then
+					return false
+				end -- Ghost node
 
 				local aClass = a.Class
 				local bClass = b.Class
@@ -429,7 +455,9 @@ local EmbeddedModules = {
 				local textServ = service.TextService
 
 				local function recur(root, depth)
-					if depth > maxDepth then maxDepth = depth end
+					if depth > maxDepth then
+						maxDepth = depth
+					end
 					depth = depth + 1
 					if sortingEnabled and not root.Sorted then
 						tSort(root, sortFunc)
@@ -438,7 +466,9 @@ local EmbeddedModules = {
 					for i = 1, #root do
 						local n = root[i]
 
-						if (isSearching and not searchResults[n]) or n.Del then continue end
+						if (isSearching and not searchResults[n]) or n.Del then
+							continue
+						end
 
 						if useNameWidth then
 							local nameWidth = n.NameWidth
@@ -451,12 +481,16 @@ local EmbeddedModules = {
 								end
 								n.NameWidth = nameWidth
 							end
-							if nameWidth > maxNameWidth then maxNameWidth = nameWidth end
+							if nameWidth > maxNameWidth then
+								maxNameWidth = nameWidth
+							end
 						end
 
 						tree[count] = n
 						count = count + 1
-						if expanded[n] and #n > 0 then recur(n, depth) end
+						if expanded[n] and #n > 0 then
+							recur(n, depth)
+						end
 					end
 				end
 
@@ -467,7 +501,9 @@ local EmbeddedModules = {
 					if not (isSearching and not searchResults[nilNode]) then
 						tree[count] = nilNode
 						count = count + 1
-						if expanded[nilNode] then recur(nilNode, 2) end
+						if expanded[nilNode] then
+							recur(nilNode, 2)
+						end
 					end
 				end
 
@@ -479,7 +515,9 @@ local EmbeddedModules = {
 			end
 
 			Explorer.StartDrag = function(offX, offY)
-				if Explorer.Dragging then return end
+				if Explorer.Dragging then
+					return
+				end
 				Explorer.Dragging = true
 
 				local dragTree = treeFrame:Clone()
@@ -588,7 +626,9 @@ local EmbeddedModules = {
 				local mouseEvent, releaseEvent
 
 				mouseEvent = input.InputChanged:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseMovement then move() end
+					if input.UserInputType == Enum.UserInputType.MouseMovement then
+						move()
+					end
 				end)
 
 				releaseEvent = input.InputEnded:Connect(function(input)
@@ -603,12 +643,16 @@ local EmbeddedModules = {
 							if Lib.CheckMouseInGui(listEntries[i]) then
 								local node = tree[i + Explorer.Index]
 								if node then
-									if selection.Map[node] then return end
+									if selection.Map[node] then
+										return
+									end
 									local newPar = node.Obj
 									local sList = selection.List
 									for i = 1, #sList do
 										local n = sList[i]
-										pcall(function() n.Obj.Parent = newPar end)
+										pcall(function()
+											n.Obj.Parent = newPar
+										end)
 									end
 									Explorer.ViewNode(sList[1])
 								end
@@ -688,7 +732,9 @@ local EmbeddedModules = {
 
 				newEntry.Indent.Expand.InputBegan:Connect(function(input)
 					local node = tree[index + Explorer.Index]
-					if not node or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+					if not node or input.UserInputType ~= Enum.UserInputType.MouseMovement then
+						return
+					end
 
 					Explorer.MiscIcons:DisplayByKey(
 						newEntry.Indent.Expand.Icon,
@@ -698,7 +744,9 @@ local EmbeddedModules = {
 
 				newEntry.Indent.Expand.InputEnded:Connect(function(input)
 					local node = tree[index + Explorer.Index]
-					if not node or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+					if not node or input.UserInputType ~= Enum.UserInputType.MouseMovement then
+						return
+					end
 
 					Explorer.MiscIcons:DisplayByKey(
 						newEntry.Indent.Expand.Icon,
@@ -708,7 +756,9 @@ local EmbeddedModules = {
 
 				newEntry.Indent.Expand.MouseButton1Down:Connect(function()
 					local node = tree[index + Explorer.Index]
-					if not node or #node == 0 then return end
+					if not node or #node == 0 then
+						return
+					end
 
 					expanded[node] = not expanded[node]
 					Explorer.Update()
@@ -801,7 +851,9 @@ local EmbeddedModules = {
 					end
 				end
 
-				if not renameNodeVisible then renameBox.Visible = false end
+				if not renameNodeVisible then
+					renameBox.Visible = false
+				end
 
 				for i = maxNodes + 1, #listEntries do
 					Explorer.ClickSystem:Remove(listEntries[i])
@@ -813,9 +865,13 @@ local EmbeddedModules = {
 			Explorer.PerformUpdate = function(instant)
 				updateDebounce = true
 				Lib.FastWait(not instant and 0.1)
-				if not updateDebounce then return end
+				if not updateDebounce then
+					return
+				end
 				updateDebounce = false
-				if not Explorer.Window:IsVisible() then return end
+				if not Explorer.Window:IsVisible() then
+					return
+				end
 				Explorer.Update()
 				Explorer.Refresh()
 			end
@@ -823,23 +879,31 @@ local EmbeddedModules = {
 			Explorer.ForceUpdate = function(norefresh)
 				updateDebounce = false
 				Explorer.Update()
-				if not norefresh then Explorer.Refresh() end
+				if not norefresh then
+					Explorer.Refresh()
+				end
 			end
 
 			Explorer.PerformRefresh = function()
 				refreshDebounce = true
 				Lib.FastWait(0.1)
 				refreshDebounce = false
-				if updateDebounce or not Explorer.Window:IsVisible() then return end
+				if updateDebounce or not Explorer.Window:IsVisible() then
+					return
+				end
 				Explorer.Refresh()
 			end
 
 			Explorer.IsNodeVisible = function(node)
-				if not node then return end
+				if not node then
+					return
+				end
 
 				local curNode = node.Parent
 				while curNode do
-					if not expanded[curNode] then return false end
+					if not expanded[curNode] then
+						return false
+					end
 					curNode = curNode.Parent
 				end
 				return true
@@ -848,11 +912,15 @@ local EmbeddedModules = {
 			Explorer.NodeDepth = function(node)
 				local depth = 0
 
-				if node == nilNode then return 1 end
+				if node == nilNode then
+					return 1
+				end
 
 				local curNode = node.Parent
 				while curNode do
-					if curNode == nilNode then depth = depth + 1 end
+					if curNode == nilNode then
+						depth = depth + 1
+					end
 					curNode = curNode.Parent
 					depth = depth + 1
 				end
@@ -860,16 +928,26 @@ local EmbeddedModules = {
 			end
 
 			Explorer.SetupConnections = function()
-				if descendantAddedCon then descendantAddedCon:Disconnect() end
-				if descendantRemovingCon then descendantRemovingCon:Disconnect() end
-				if itemChangedCon then itemChangedCon:Disconnect() end
+				if descendantAddedCon then
+					descendantAddedCon:Disconnect()
+				end
+				if descendantRemovingCon then
+					descendantRemovingCon:Disconnect()
+				end
+				if itemChangedCon then
+					itemChangedCon:Disconnect()
+				end
 
 				if Main.Elevated then
 					descendantAddedCon = game.DescendantAdded:Connect(addObject)
 					descendantRemovingCon = game.DescendantRemoving:Connect(removeObject)
 				else
-					descendantAddedCon = game.DescendantAdded:Connect(function(obj) pcall(addObject, obj) end)
-					descendantRemovingCon = game.DescendantRemoving:Connect(function(obj) pcall(removeObject, obj) end)
+					descendantAddedCon = game.DescendantAdded:Connect(function(obj)
+						pcall(addObject, obj)
+					end)
+					descendantRemovingCon = game.DescendantRemoving:Connect(function(obj)
+						pcall(removeObject, obj)
+					end)
 				end
 
 				if Settings.Explorer.UseNameWidth then
@@ -882,13 +960,42 @@ local EmbeddedModules = {
 					end)
 				else
 					itemChangedCon = game.ItemChanged:Connect(function(obj, prop)
-						if prop == "Parent" and nodes[obj] then moveObject(obj) end
+						if prop == "Parent" and nodes[obj] then
+							moveObject(obj)
+						end
 					end)
 				end
 			end
 
-			Explorer.ViewNode = function(node)
-				if not node then return end
+			-- Explorer.ViewNode = function(node)
+			-- 	if not node then
+			-- 		return
+			-- 	end
+
+			-- 	Explorer.MakeNodeVisible(node)
+			-- 	Explorer.ForceUpdate(true)
+			-- 	local visibleSpace = scrollV.VisibleSpace
+
+			-- 	for i, v in next, tree do
+			-- 		if v == node then
+			-- 			local relative = i - 1
+			-- 			if Explorer.Index > relative then
+			-- 				scrollV.Index = relative
+			-- 			elseif Explorer.Index + visibleSpace - 1 <= relative then
+			-- 				scrollV.Index = relative - visibleSpace + 2
+			-- 			end
+			-- 		end
+			-- 	end
+
+			-- 	scrollV:Update()
+			-- 	Explorer.Index = scrollV.Index
+			-- 	Explorer.Refresh()
+			-- end
+
+			Explorer.ViewNode = function(node, center)
+				if not node then
+					return
+				end
 
 				Explorer.MakeNodeVisible(node)
 				Explorer.ForceUpdate(true)
@@ -897,11 +1004,24 @@ local EmbeddedModules = {
 				for i, v in next, tree do
 					if v == node then
 						local relative = i - 1
-						if Explorer.Index > relative then
-							scrollV.Index = relative
-						elseif Explorer.Index + visibleSpace - 1 <= relative then
-							scrollV.Index = relative - visibleSpace + 2
+						if center then
+							local desired = relative - math.floor(visibleSpace / 2)
+							local total = scrollV.TotalSpace or (#tree + 1)
+							local maxIndex = math.max(0, total - visibleSpace)
+							if desired < 0 then
+								desired = 0
+							elseif desired > maxIndex then
+								desired = maxIndex
+							end
+							scrollV.Index = desired
+						else
+							if Explorer.Index > relative then
+								scrollV.Index = relative
+							elseif Explorer.Index + visibleSpace - 1 <= relative then
+								scrollV.Index = relative - visibleSpace + 2
+							end
 						end
+						break
 					end
 				end
 
@@ -910,10 +1030,14 @@ local EmbeddedModules = {
 				Explorer.Refresh()
 			end
 
-			Explorer.ViewObj = function(obj) Explorer.ViewNode(nodes[obj]) end
+			Explorer.ViewObj = function(obj)
+				Explorer.ViewNode(nodes[obj])
+			end
 
 			Explorer.MakeNodeVisible = function(node, expandRoot)
-				if not node then return end
+				if not node then
+					return
+				end
 
 				local hasExpanded = false
 
@@ -929,7 +1053,9 @@ local EmbeddedModules = {
 					currentNode = currentNode.Parent
 				end
 
-				if hasExpanded and not updateDebounce then coroutine.wrap(Explorer.PerformUpdate)(true) end
+				if hasExpanded and not updateDebounce then
+					coroutine.wrap(Explorer.PerformUpdate)(true)
+				end
 			end
 
 			Explorer.ShowRightClick = function()
@@ -973,14 +1099,19 @@ local EmbeddedModules = {
 				context:AddRegistered("COLLAPSE_ALL")
 
 				context:AddDivider()
-				if expanded == Explorer.SearchExpanded then context:AddRegistered("CLEAR_SEARCH_AND_JUMP_TO") end
-				if env.setclipboard then context:AddRegistered("COPY_PATH") end
+				if expanded == Explorer.SearchExpanded then
+					context:AddRegistered("CLEAR_SEARCH_AND_JUMP_TO")
+				end
+				if env.setclipboard then
+					context:AddRegistered("COPY_PATH")
+				end
 				context:AddRegistered("INSERT_OBJECT")
 				context:AddRegistered("SAVE_INST")
 				context:AddRegistered("CALL_FUNCTION")
 				context:AddRegistered("VIEW_CONNECTIONS")
 				context:AddRegistered("GET_REFERENCES")
 				context:AddRegistered("VIEW_API")
+				context:AddRegistered("Lock_To_Selection")
 
 				context:QueueDivider()
 
@@ -989,9 +1120,13 @@ local EmbeddedModules = {
 					context:AddRegistered("VIEW_OBJECT")
 				end
 
-				if presentClasses["Player"] then context:AddRegistered("SELECT_CHARACTER") end
+				if presentClasses["Player"] then
+					context:AddRegistered("SELECT_CHARACTER")
+				end
 
-				if presentClasses["LuaSourceContainer"] then context:AddRegistered("VIEW_SCRIPT") end
+				if presentClasses["LuaSourceContainer"] then
+					context:AddRegistered("VIEW_SCRIPT")
+				end
 
 				if sMap[nilNode] then
 					context:AddRegistered("REFRESH_NIL")
@@ -1079,7 +1214,9 @@ local EmbeddedModules = {
 						end
 						selection:SetTable(newSelection)
 
-						if #newSelection > 0 then Explorer.ViewNode(newSelection[1]) end
+						if #newSelection > 0 then
+							Explorer.ViewNode(newSelection[1])
+						end
 					end,
 				})
 
@@ -1111,7 +1248,9 @@ local EmbeddedModules = {
 						end
 
 						selection:SetTable(newSelection)
-						if #newSelection > 0 then Explorer.ViewNode(newSelection[1]) end
+						if #newSelection > 0 then
+							Explorer.ViewNode(newSelection[1])
+						end
 					end,
 				})
 
@@ -1139,7 +1278,9 @@ local EmbeddedModules = {
 					Shortcut = "F2",
 					OnClick = function()
 						local sList = selection.List
-						if sList[1] then Explorer.SetRenamingNode(sList[1]) end
+						if sList[1] then
+							Explorer.SetRenamingNode(sList[1])
+						end
 					end,
 				})
 
@@ -1151,11 +1292,15 @@ local EmbeddedModules = {
 					Shortcut = "Ctrl+G",
 					OnClick = function()
 						local sList = selection.List
-						if #sList == 0 then return end
+						if #sList == 0 then
+							return
+						end
 
 						local model = Instance.new("Model", sList[#sList].Obj.Parent)
 						for i = 1, #sList do
-							pcall(function() sList[i].Obj.Parent = model end)
+							pcall(function()
+								sList[i].Obj.Parent = model
+							end)
 						end
 
 						if nodes[model] then
@@ -1190,18 +1335,24 @@ local EmbeddedModules = {
 							end
 
 							for i = 1, #ch do
-								pcall(function() ch[i].Obj.Parent = par end)
+								pcall(function()
+									ch[i].Obj.Parent = par
+								end)
 							end
 
 							node.Obj:Destroy()
 						end
 
 						for i, v in next, selection.List do
-							if isa(v.Obj, "Model") then ungroup(v) end
+							if isa(v.Obj, "Model") then
+								ungroup(v)
+							end
 						end
 
 						selection:SetTable(newSelection)
-						if #newSelection > 0 then Explorer.ViewNode(newSelection[1]) end
+						if #newSelection > 0 then
+							Explorer.ViewNode(newSelection[1])
+						end
 					end,
 				})
 
@@ -1219,7 +1370,9 @@ local EmbeddedModules = {
 							local node = sList[i]
 							for ind = 1, #node do
 								local cNode = node[ind]
-								if ind == 1 then Explorer.MakeNodeVisible(cNode) end
+								if ind == 1 then
+									Explorer.MakeNodeVisible(cNode)
+								end
 
 								newSelection[count] = cNode
 								count = count + 1
@@ -1270,7 +1423,9 @@ local EmbeddedModules = {
 						local isa = game.IsA
 
 						local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-						if not hrp then return end
+						if not hrp then
+							return
+						end
 
 						for i = 1, #sList do
 							local node = sList[i]
@@ -1301,7 +1456,9 @@ local EmbeddedModules = {
 						local function expand(node)
 							expanded[node] = true
 							for i = 1, #node do
-								if #node[i] > 0 then expand(node[i]) end
+								if #node[i] > 0 then
+									expand(node[i])
+								end
 							end
 						end
 
@@ -1321,7 +1478,9 @@ local EmbeddedModules = {
 						local function expand(node)
 							expanded[node] = nil
 							for i = 1, #node do
-								if #node[i] > 0 then expand(node[i]) end
+								if #node[i] > 0 then
+									expand(node[i])
+								end
 							end
 						end
 
@@ -1347,7 +1506,9 @@ local EmbeddedModules = {
 
 						selection:SetTable(newSelection)
 						Explorer.ClearSearch()
-						if #newSelection > 0 then Explorer.ViewNode(newSelection[1]) end
+						if #newSelection > 0 then
+							Explorer.ViewNode(newSelection[1])
+						end
 					end,
 				})
 
@@ -1425,7 +1586,9 @@ local EmbeddedModules = {
 							end
 						end
 					end,
-					OnRightClick = function() workspace.CurrentCamera.CameraSubject = plr.Character end,
+					OnRightClick = function()
+						workspace.CurrentCamera.CameraSubject = plr.Character
+					end,
 				})
 
 				context:Register("VIEW_SCRIPT", {
@@ -1434,7 +1597,9 @@ local EmbeddedModules = {
 					Icon = "ViewScript",
 					OnClick = function()
 						local scr = selection.List[1] and selection.List[1].Obj
-						if scr then ScriptViewer.ViewScript(scr) end
+						if scr then
+							ScriptViewer.ViewScript(scr)
+						end
 					end,
 				})
 
@@ -1467,15 +1632,50 @@ local EmbeddedModules = {
 
 				context:Register("REFRESH_NIL", {
 					Name = "Refresh Nil Instances",
-					OnClick = function() Explorer.RefreshNilInstances() end,
+					OnClick = function()
+						Explorer.RefreshNilInstances()
+					end,
 				})
 
 				context:Register("HIDE_NIL", {
 					Name = "Hide Nil Instances",
-					OnClick = function() Explorer.HideNilInstances() end,
+					OnClick = function()
+						Explorer.HideNilInstances()
+					end,
+				})
+
+				context:Register("Lock_To_Selection", {
+					Name = "Lock To Selection",
+					OnClick = function()
+						Explorer.LockToSelection()
+					end,
 				})
 
 				Explorer.RightClickContext = context
+			end
+
+			local isLocked = false
+
+			local function selectObj(obj)
+				if obj == nil then
+					return
+				end
+				local node = nodes[obj]
+				if node then
+					selection:Set(node)
+					Explorer.ViewNode(node)
+				end
+			end
+
+			Explorer.LockToSelection = function()
+				isLocked = not isLocked
+				task.spawn(function()
+					while isLocked and selection.List[1] do
+						local sList = selection.List
+						Explorer.ViewNode(sList[1], true)
+						task.wait()
+					end
+				end)
 			end
 
 			Explorer.HideNilInstances = function()
@@ -1497,7 +1697,9 @@ local EmbeddedModules = {
 			end
 
 			Explorer.RefreshNilInstances = function()
-				if not env.getnilinstances then return end
+				if not env.getnilinstances then
+					return
+				end
 
 				local nilInsts = env.getnilinstances()
 				local game = game
@@ -1536,7 +1738,9 @@ local EmbeddedModules = {
 				for i = 1, #nilInsts do
 					local obj = nilInsts[i]
 					local node = nodes[obj]
-					if not node then coroutine.wrap(addObject)(obj) end
+					if not node then
+						coroutine.wrap(addObject)(obj)
+					end
 				end
 
 				--[[
@@ -1677,7 +1881,9 @@ local EmbeddedModules = {
 						local lower = string.lower
 						local find = string.find
 						local classQuery = string.split(argString)[1]
-						if not classQuery then return end
+						if not classQuery then
+							return
+						end
 						classQuery = lower(classQuery)
 
 						local className
@@ -1690,7 +1896,9 @@ local EmbeddedModules = {
 								className = class
 							end
 						end
-						if not className then return end
+						if not className then
+							return
+						end
 
 						return {
 							Headers = { "local isa = game.IsA" },
@@ -1711,7 +1919,9 @@ local EmbeddedModules = {
 					end,
 					["rad"] = function(argString)
 						local num = tonumber(argString)
-						if not num then return end
+						if not num then
+							return
+						end
 
 						if
 							not service.Players.LocalPlayer.Character
@@ -1734,9 +1944,13 @@ local EmbeddedModules = {
 				},
 				Specific = {
 					["players"] = function()
-						return function() return service.Players:GetPlayers() end
+						return function()
+							return service.Players:GetPlayers()
+						end
 					end,
-					["loadedmodules"] = function() return env.getloadedmodules end,
+					["loadedmodules"] = function()
+						return env.getloadedmodules
+					end,
 				},
 				Default = function(argString, caseSensitive)
 					local cleanString = argString:gsub('"', '\\"'):gsub("\n", "\\n")
@@ -1771,7 +1985,9 @@ local EmbeddedModules = {
 				local specFilterList, specMap = {}, {}
 				local finalPredicate = ""
 				local rep = string.rep
-				local formatQuery = query:gsub("\\.", "  "):gsub('".-"', function(str) return rep(" ", #str) end)
+				local formatQuery = query:gsub("\\.", "  "):gsub('".-"', function(str)
+					return rep(" ", #str)
+				end)
 				local headers = {}
 				local objectDefs = {}
 				local setups = {}
@@ -1845,7 +2061,9 @@ local EmbeddedModules = {
 
 				local function inQuotes(str)
 					local len = #str
-					if sub(str, 1, 1) == '"' and sub(str, len, len) == '"' then return sub(str, 2, len - 1) end
+					if sub(str, 1, 1) == '"' and sub(str, len, len) == '"' then
+						return sub(str, 2, len - 1)
+					end
 				end
 
 				for i = 1, #found do
@@ -1963,7 +2181,9 @@ local EmbeddedModules = {
 
 				local funcStr = template:format(finalHeaders, finalSetups, finalObjectDefs, finalPredicate)
 				local s, func = pcall(loadstring, funcStr)
-				if not s or not func then return nil, specFilterList end
+				if not s or not func then
+					return nil, specFilterList
+				end
 
 				local env = setmetatable({
 					["searchResults"] = searchResults,
@@ -2013,7 +2233,9 @@ local EmbeddedModules = {
 								end
 							end
 
-							if #node > 0 then defaultSearch(node) end
+							if #node > 0 then
+								defaultSearch(node)
+							end
 						end
 					end
 
@@ -2033,7 +2255,9 @@ local EmbeddedModules = {
 							local objs = specFilters[i]()
 							for c = 1, #objs do
 								local node = nodes[objs[c]]
-								if node then resMap[node] = true end
+								if node then
+									resMap[node] = true
+								end
 							end
 						end
 					end
@@ -2061,7 +2285,9 @@ local EmbeddedModules = {
 
 				Lib.ViewportTextBox.convert(searchBox)
 
-				searchBox.FocusLost:Connect(function() Explorer.DoSearch(searchBox.Text) end)
+				searchBox.FocusLost:Connect(function()
+					Explorer.DoSearch(searchBox.Text)
+				end)
 			end
 
 			Explorer.InitEntryTemplate = function()
@@ -2167,9 +2393,13 @@ local EmbeddedModules = {
 				sys.AllowedButtons = { 1, 2 }
 				sys.OnDown:Connect(function(item, combo, button)
 					local ind = table.find(listEntries, item)
-					if not ind then return end
+					if not ind then
+						return
+					end
 					local node = tree[ind + Explorer.Index]
-					if not node then return end
+					if not node then
+						return
+					end
 
 					local entry = listEntries[ind]
 
@@ -2191,11 +2421,15 @@ local EmbeddedModules = {
 						sys.IsRenaming = selection.Map[node]
 
 						if Lib.IsShiftDown() then
-							if not selection.Piviot then return end
+							if not selection.Piviot then
+								return
+							end
 
 							local fromIndex = table.find(tree, selection.Piviot)
 							local toIndex = table.find(tree, node)
-							if not fromIndex or not toIndex then return end
+							if not fromIndex or not toIndex then
+								return
+							end
 							fromIndex, toIndex = math.min(fromIndex, toIndex), math.max(fromIndex, toIndex)
 
 							local sList = selection.List
@@ -2231,7 +2465,9 @@ local EmbeddedModules = {
 							selection.Piviot = node
 						end
 					elseif button == 2 then
-						if Properties.SelectObject(node.Obj) then return end
+						if Properties.SelectObject(node.Obj) then
+							return
+						end
 
 						if not Lib.IsCtrlDown() and not selection.Map[node] then
 							selection.ShiftSet = {}
@@ -2246,9 +2482,13 @@ local EmbeddedModules = {
 
 				sys.OnRelease:Connect(function(item, combo, button)
 					local ind = table.find(listEntries, item)
-					if not ind then return end
+					if not ind then
+						return
+					end
 					local node = tree[ind + Explorer.Index]
-					if not node then return end
+					if not node then
+						return
+					end
 
 					if button == 1 then
 						if selection.Map[node] and not Lib.IsShiftDown() and not Lib.IsCtrlDown() then
@@ -2307,7 +2547,9 @@ local EmbeddedModules = {
 								fw()
 							end
 						end
-						if processed and not refreshDebounce then Explorer.PerformRefresh() end
+						if processed and not refreshDebounce then
+							Explorer.PerformRefresh()
+						end
 						fw(0.5)
 					end
 				end)()
@@ -2402,7 +2644,9 @@ local EmbeddedModules = {
 
 				local partEnabled = Settings.Explorer.PartSelectionBox
 				local guiEnabled = Settings.Explorer.GuiSelectionBox
-				if not partEnabled and not guiEnabled then return end
+				if not partEnabled and not guiEnabled then
+					return
+				end
 
 				local svg = Explorer.SelectionVisualGui
 				local svb = Explorer.SelectionVisualBox
@@ -2412,7 +2656,9 @@ local EmbeddedModules = {
 				local boxCount = 0
 				local workspaceNode = nodes[workspace]
 				for i = 1, #sList do
-					if boxCount > 1000 then break end
+					if boxCount > 1000 then
+						break
+					end
 					local node = sList[i]
 					local obj = node.Obj
 
@@ -2609,7 +2855,9 @@ local EmbeddedModules = {
 				scrollH.Increment = 5
 				scrollH.WheelIncrement = Explorer.EntryIndent
 				scrollH.Gui.Position = UDim2.new(0, 0, 1, -16)
-				scrollH.Scrolled:Connect(function() Explorer.Refresh() end)
+				scrollH.Scrolled:Connect(function()
+					Explorer.Refresh()
+				end)
 
 				local window = Lib.Window.new()
 				Explorer.Window = window
@@ -2648,8 +2896,12 @@ local EmbeddedModules = {
 					Explorer.Update()
 					Explorer.Refresh()
 				end)
-				window.OnDeactivate:Connect(function() Explorer.Active = false end)
-				window.OnMinimize:Connect(function() Explorer.Active = false end)
+				window.OnDeactivate:Connect(function()
+					Explorer.Active = false
+				end)
+				window.OnMinimize:Connect(function()
+					Explorer.Active = false
+				end)
 
 				-- Settings
 				autoUpdateSearch = Settings.Explorer.AutoUpdateSearch
@@ -2659,7 +2911,9 @@ local EmbeddedModules = {
 				expanded[nodes[game]] = true
 
 				-- Nil Instances
-				if env.getnilinstances then nodes[nilNode.Obj] = nilNode end
+				if env.getnilinstances then
+					nodes[nilNode.Obj] = nilNode
+				end
 
 				Explorer.SetupConnections()
 
@@ -2668,7 +2922,9 @@ local EmbeddedModules = {
 					for i = 1, #insts do
 						local obj = insts[i]
 						local par = nodes[ffa(obj, "Instance")]
-						if not par then continue end
+						if not par then
+							continue
+						end
 						local newNode = {
 							Obj = obj,
 							Parent = par,
@@ -2681,7 +2937,9 @@ local EmbeddedModules = {
 						local obj = insts[i]
 						local s, parObj = pcall(ffa, obj, "Instance")
 						local par = nodes[parObj]
-						if not par then continue end
+						if not par then
+							continue
+						end
 						local newNode = {
 							Obj = obj,
 							Parent = par,
@@ -2692,21 +2950,18 @@ local EmbeddedModules = {
 				end
 			end
 
-			local function selectObj(obj)
-				if obj == nil then return end
-				local node = nodes[obj]
-				if node then
-					selection:Set(node)
-					Explorer.ViewNode(node)
-				end
-			end
-
 			local function isActuallyVisible(object, isParent)
-				if not object.Visible then return false end
-				if object.Parent and object.Parent:IsA("GuiObject") then
-					if not isActuallyVisible(object.Parent, true) then return false end
+				if not object.Visible then
+					return false
 				end
-				if isParent then return true end
+				if object.Parent and object.Parent:IsA("GuiObject") then
+					if not isActuallyVisible(object.Parent, true) then
+						return false
+					end
+				end
+				if isParent then
+					return true
+				end
 				if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
 					if (object.TextTransparency or 0) >= 1 and (object.BackgroundTransparency or 0) >= 1 then
 						return false
@@ -2716,7 +2971,9 @@ local EmbeddedModules = {
 						return false
 					end
 				elseif object:IsA("GuiObject") then
-					if (object.BackgroundTransparency or 0) >= 1 then return false end
+					if (object.BackgroundTransparency or 0) >= 1 then
+						return false
+					end
 				end
 				return true
 			end
@@ -2750,7 +3007,9 @@ local EmbeddedModules = {
 						end
 					end
 
-					if not mouse.Target then return end
+					if not mouse.Target then
+						return
+					end
 					local targ = mouse.Target
 
 					if targ:FindFirstAncestorOfClass("Model") and not _holdingAlt then
@@ -2783,7 +3042,9 @@ local EmbeddedModules = {
 			end)
 
 			game:GetService("UserInputService").InputEnded:Connect(function(input, gameProcessed)
-				if gameProcessed then return end
+				if gameProcessed then
+					return
+				end
 				if input.KeyCode == Enum.KeyCode.LeftAlt or input.KeyCode == Enum.KeyCode.RightAlt then
 					_holdingAlt = false
 				end
@@ -2868,7 +3129,9 @@ local EmbeddedModules = {
 			local function getGuiMT(props, funcs)
 				return {
 					__index = function(self, ind)
-						if not props[ind] then return funcs[ind] or self.Gui[ind] end
+						if not props[ind] then
+							return funcs[ind] or self.Gui[ind]
+						end
 					end,
 					__newindex = function(self, ind, val)
 						if not props[ind] then
@@ -2895,11 +3158,15 @@ local EmbeddedModules = {
 					cleanTable[char(i)] = "\\" .. format("%03d", i)
 				end
 
-				return function(str) return gsub(str, '["\\\0-\31\127-\255]', cleanTable) end
+				return function(str)
+					return gsub(str, '["\\\0-\31\127-\255]', cleanTable)
+				end
 			end)()
 
 			Lib.CheckMouseInGui = function(gui)
-				if gui == nil then return false end
+				if gui == nil then
+					return false
+				end
 				local mouse = Main.Mouse
 				local guiPosition = gui.AbsolutePosition
 				local guiSize = gui.AbsoluteSize
@@ -3022,10 +3289,9 @@ local EmbeddedModules = {
 						if evalEntities then
 							local pos = s:find("<[_%w]")
 							if pos then
-								s:sub(1, pos):gsub(
-									"<!ENTITY%s+([_%w]+)%s+(.)(.-)%2",
-									function(name, q, entity) entities[#entities + 1] = { name = name, value = entity } end
-								)
+								s:sub(1, pos):gsub("<!ENTITY%s+([_%w]+)%s+(.)(.-)%2", function(name, q, entity)
+									entities[#entities + 1] = { name = name, value = entity }
+								end)
 								tentities = createEntityTable(entities)
 								s = replaceEntities(s:sub(pos), tentities)
 							end
@@ -3035,7 +3301,9 @@ local EmbeddedModules = {
 
 						local addtext = function(txt)
 							txt = txt:match("^%s*(.*%S)") or ""
-							if #txt ~= 0 then t[#t + 1] = { text = txt } end
+							if #txt ~= 0 then
+								t[#t + 1] = { text = txt }
+							end
 						end
 
 						s:gsub("<([?!/]?)([-:_%w]+)%s*(/?>?)([^<]*)", function(type, name, closed, txt)
@@ -3073,13 +3341,9 @@ local EmbeddedModules = {
 							-- ENTITY
 							elseif "!" == type then
 								if E == name:byte(1) then
-									txt:gsub(
-										"([_%w]+)%s+(.)(.-)%2",
-										function(name, q, entity)
-											entities[#entities + 1] = { name = name, value = entity }
-										end,
-										1
-									)
+									txt:gsub("([_%w]+)%s+(.)(.-)%2", function(name, q, entity)
+										entities[#entities + 1] = { name = name, value = entity }
+									end, 1)
 								end
 								-- elseif '?' == type then
 								--   print('?  ' .. name .. ' // ' .. attrs .. '$$')
@@ -3093,13 +3357,17 @@ local EmbeddedModules = {
 						return { children = t, entities = entities, tentities = tentities }
 					end
 
-					function parseText(txt) return parse(txt) end
+					function parseText(txt)
+						return parse(txt)
+					end
 
 					function defaultEntityTable()
 						return { quot = '"', apos = "'", lt = "<", gt = ">", amp = "&", tab = "\t", nbsp = " " }
 					end
 
-					function replaceEntities(s, entities) return s:gsub("&([^;]+);", entities) end
+					function replaceEntities(s, entities)
+						return s:gsub("&([^;]+);", entities)
+					end
 
 					function createEntityTable(docEntities, resultEntities)
 						entities = resultEntities or defaultEntityTable()
@@ -3118,7 +3386,9 @@ local EmbeddedModules = {
 			end)()
 
 			Lib.FastWait = function(s)
-				if not s then return signalWait(renderStepped) end
+				if not s then
+					return signalWait(renderStepped)
+				end
 				local start = tick()
 				while tick() - start < s do
 					signalWait(renderStepped)
@@ -3141,7 +3411,9 @@ local EmbeddedModules = {
 				end
 
 				button.InputBegan:Connect(function(input)
-					if disabled then return end
+					if disabled then
+						return
+					end
 					if input.UserInputType == Enum.UserInputType.MouseMovement and not holding then
 						if mode == 1 then
 							button.BackgroundTransparency = 0.4
@@ -3154,13 +3426,17 @@ local EmbeddedModules = {
 							button.BackgroundTransparency = 0
 						elseif mode == 2 then
 							button.BackgroundColor3 = control.PressColor
-							if control.OutlineColor then button.BorderColor3 = control.PressColor end
+							if control.OutlineColor then
+								button.BorderColor3 = control.PressColor
+							end
 						end
 					end
 				end)
 
 				button.InputEnded:Connect(function(input)
-					if disabled then return end
+					if disabled then
+						return
+					end
 					if input.UserInputType == Enum.UserInputType.MouseMovement and not holding then
 						if mode == 1 then
 							button.BackgroundTransparency = 1
@@ -3174,7 +3450,9 @@ local EmbeddedModules = {
 						elseif mode == 2 then
 							button.BackgroundColor3 = Lib.CheckMouseInGui(button) and control.HoverColor
 								or control.StartColor
-							if control.OutlineColor then button.BorderColor3 = control.OutlineColor end
+							if control.OutlineColor then
+								button.BorderColor3 = control.OutlineColor
+							end
 						end
 					end
 				end)
@@ -3190,14 +3468,18 @@ local EmbeddedModules = {
 					end
 				end
 
-				control.Enable = function() disabled = false end
+				control.Enable = function()
+					disabled = false
+				end
 
 				return control
 			end
 
 			Lib.FindAndRemove = function(t, item)
 				local pos = table.find(t, item)
-				if pos then table.remove(t, pos) end
+				if pos then
+					table.remove(t, pos)
+				end
 			end
 
 			Lib.AttachTo = function(obj, data)
@@ -3205,12 +3487,16 @@ local EmbeddedModules = {
 				local disabled = false
 
 				local function update()
-					if not obj or not target then return end
+					if not obj or not target then
+						return
+					end
 
 					local targetPos = target.AbsolutePosition
 					local targetSize = target.AbsoluteSize
 					obj.Position = UDim2.new(0, targetPos.X + posOffX, 0, targetPos.Y + posOffY)
-					if resize then obj.Size = UDim2.new(0, targetSize.X + sizeOffX, 0, targetSize.Y + sizeOffY) end
+					if resize then
+						obj.Size = UDim2.new(0, targetSize.X + sizeOffX, 0, targetSize.Y + sizeOffY)
+					end
 				end
 
 				local function setup(o, data)
@@ -3229,7 +3515,9 @@ local EmbeddedModules = {
 					end
 					if target then
 						con = target.Changed:Connect(function(prop)
-							if not disabled and prop == "AbsolutePosition" or prop == "AbsoluteSize" then update() end
+							if not disabled and prop == "AbsolutePosition" or prop == "AbsoluteSize" then
+								update()
+							end
 						end)
 					end
 
@@ -3238,12 +3526,16 @@ local EmbeddedModules = {
 				setup(obj, data)
 
 				return {
-					SetData = function(obj, data) setup(obj, data) end,
+					SetData = function(obj, data)
+						setup(obj, data)
+					end,
 					Enable = function()
 						disabled = false
 						update()
 					end,
-					Disable = function() disabled = true end,
+					Disable = function()
+						disabled = true
+					end,
 					Destroy = function()
 						con:Disconnect()
 						con = nil
@@ -3254,7 +3546,9 @@ local EmbeddedModules = {
 			Lib.ProtectedGuis = {}
 
 			Lib.ShowGui = function(gui)
-				if env.protectgui then env.protectgui(gui) end
+				if env.protectgui then
+					env.protectgui(gui)
+				end
 				gui.Parent = Main.GuiHolder
 			end
 
@@ -3264,10 +3558,14 @@ local EmbeddedModules = {
 			end
 
 			Lib.ReadFile = function(filename)
-				if not env.readfile then return end
+				if not env.readfile then
+					return
+				end
 
 				local s, contents = pcall(env.readfile, filename)
-				if s and contents then return contents end
+				if s and contents then
+					return contents
+				end
 			end
 
 			Lib.DeferFunc = function(f, ...)
@@ -3276,16 +3574,22 @@ local EmbeddedModules = {
 			end
 
 			Lib.LoadCustomAsset = function(filepath)
-				if not env.getcustomasset or not env.isfile or not env.isfile(filepath) then return end
+				if not env.getcustomasset or not env.isfile or not env.isfile(filepath) then
+					return
+				end
 
 				return env.getcustomasset(filepath)
 			end
 
 			Lib.FetchCustomAsset = function(url, filepath)
-				if not env.writefile then return end
+				if not env.writefile then
+					return
+				end
 
 				local s, data = pcall(game.HttpGet, game, url)
-				if not s then return end
+				if not s then
+					return
+				end
 
 				env.writefile(filepath, data)
 				return Lib.LoadCustomAsset(filepath)
@@ -3298,11 +3602,15 @@ local EmbeddedModules = {
 
 				local disconnect = function(con)
 					local pos = table.find(con.Signal.Connections, con)
-					if pos then table.remove(con.Signal.Connections, pos) end
+					if pos then
+						table.remove(con.Signal.Connections, pos)
+					end
 				end
 
 				funcs.Connect = function(self, func)
-					if type(func) ~= "function" then error("Attempt to connect a non-function") end
+					if type(func) ~= "function" then
+						error("Attempt to connect a non-function")
+					end
 					local con = {
 						Signal = self,
 						Func = func,
@@ -3314,13 +3622,17 @@ local EmbeddedModules = {
 
 				funcs.Fire = function(self, ...)
 					for i, v in next, self.Connections do
-						xpcall(coroutine.wrap(v.Func), function(e) warn(e .. "\n" .. debug.traceback()) end, ...)
+						xpcall(coroutine.wrap(v.Func), function(e)
+							warn(e .. "\n" .. debug.traceback())
+						end, ...)
 					end
 				end
 
 				local mt = {
 					__index = funcs,
-					__tostring = function(self) return "Signal: " .. tostring(#self.Connections) .. " Connections" end,
+					__tostring = function(self)
+						return "Signal: " .. tostring(#self.Connections) .. " Connections"
+					end,
 				}
 
 				local function new()
@@ -3337,7 +3649,9 @@ local EmbeddedModules = {
 				local funcs = {}
 
 				funcs.Add = function(self, obj)
-					if self.Map[obj] then return end
+					if self.Map[obj] then
+						return
+					end
 
 					local list = self.List
 					list[#list + 1] = obj
@@ -3356,15 +3670,21 @@ local EmbeddedModules = {
 							changed = true
 						end
 					end
-					if changed then self.Changed:Fire() end
+					if changed then
+						self.Changed:Fire()
+					end
 				end
 
 				funcs.Remove = function(self, obj)
-					if not self.Map[obj] then return end
+					if not self.Map[obj] then
+						return
+					end
 
 					local list = self.List
 					local pos = table.find(list, obj)
-					if pos then table.remove(list, pos) end
+					if pos then
+						table.remove(list, pos)
+					end
 					self.Map[obj] = nil
 					self.Changed:Fire()
 				end
@@ -3386,11 +3706,15 @@ local EmbeddedModules = {
 							changed = true
 						end
 					end
-					if changed then self.Changed:Fire() end
+					if changed then
+						self.Changed:Fire()
+					end
 				end
 
 				funcs.Set = function(self, obj)
-					if #self.List == 1 and self.List[1] == obj then return end
+					if #self.List == 1 and self.List[1] == obj then
+						return
+					end
 
 					self.List = { obj }
 					self.Map = { [obj] = true }
@@ -3408,7 +3732,9 @@ local EmbeddedModules = {
 				end
 
 				funcs.Clear = function(self)
-					if #self.List == 0 then return end
+					if #self.List == 0 then
+						return
+					end
 					self.List = {}
 					self.Map = {}
 					self.Changed:Fire()
@@ -3459,10 +3785,14 @@ local EmbeddedModules = {
 				end
 
 				funcs.DisplayByKey = function(self, obj, key)
-					if self.IndexDict[key] then self:Display(obj, self.IndexDict[key]) end
+					if self.IndexDict[key] then
+						self:Display(obj, self.IndexDict[key])
+					end
 				end
 
-				funcs.SetDict = function(self, dict) self.IndexDict = dict end
+				funcs.SetDict = function(self, dict)
+					self.IndexDict = dict
+				end
 
 				local mt = {}
 				mt.__index = funcs
@@ -3515,13 +3845,17 @@ local EmbeddedModules = {
 
 					if self.Horizontal then
 						scrollThumb.Size = UDim2.new(visible / total, 0, 1, 0)
-						if scrollThumb.AbsoluteSize.X < 16 then scrollThumb.Size = UDim2.new(0, 16, 1, 0) end
+						if scrollThumb.AbsoluteSize.X < 16 then
+							scrollThumb.Size = UDim2.new(0, 16, 1, 0)
+						end
 						local fs = scrollThumbFrame.AbsoluteSize.X
 						local bs = scrollThumb.AbsoluteSize.X
 						scrollThumb.Position = UDim2.new(self:GetScrollPercent() * (fs - bs) / fs, 0, 0, 0)
 					else
 						scrollThumb.Size = UDim2.new(1, 0, visible / total, 0)
-						if scrollThumb.AbsoluteSize.Y < 16 then scrollThumb.Size = UDim2.new(1, 0, 0, 16) end
+						if scrollThumb.AbsoluteSize.Y < 16 then
+							scrollThumb.Size = UDim2.new(1, 0, 0, 16)
+						end
 						local fs = scrollThumbFrame.AbsoluteSize.Y
 						local bs = scrollThumb.AbsoluteSize.Y
 						scrollThumb.Position = UDim2.new(0, 0, self:GetScrollPercent() * (fs - bs) / fs, 0)
@@ -3646,7 +3980,9 @@ local EmbeddedModules = {
 						local buttonTick = tick()
 						local releaseEvent
 						releaseEvent = user.InputEnded:Connect(function(input)
-							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+								return
+							end
 							releaseEvent:Disconnect()
 							if checkMouseInGui(button1) and self:CanScrollUp() then
 								button1.BackgroundTransparency = 0.8
@@ -3688,7 +4024,9 @@ local EmbeddedModules = {
 						local buttonTick = tick()
 						local releaseEvent
 						releaseEvent = user.InputEnded:Connect(function(input)
-							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+								return
+							end
 							releaseEvent:Disconnect()
 							if checkMouseInGui(button2) and self:CanScrollDown() then
 								button2.BackgroundTransparency = 0.8
@@ -3716,7 +4054,9 @@ local EmbeddedModules = {
 							scrollThumb.BackgroundTransparency = 0.2
 							scrollThumb.BackgroundColor3 = self.ThumbSelectColor
 						end
-						if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+						if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+							return
+						end
 
 						local dir = self.Horizontal and "X" or "Y"
 						local lastThumbPos = nil
@@ -3730,9 +4070,13 @@ local EmbeddedModules = {
 						local releaseEvent
 						local mouseEvent
 						releaseEvent = user.InputEnded:Connect(function(input)
-							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+								return
+							end
 							releaseEvent:Disconnect()
-							if mouseEvent then mouseEvent:Disconnect() end
+							if mouseEvent then
+								mouseEvent:Disconnect()
+							end
 							if checkMouseInGui(scrollThumb) then
 								scrollThumb.BackgroundTransparency = 0.2
 							else
@@ -3802,19 +4146,27 @@ local EmbeddedModules = {
 						local thumbFrameTick = tick()
 						local releaseEvent
 						releaseEvent = user.InputEnded:Connect(function(input)
-							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+								return
+							end
 							releaseEvent:Disconnect()
 							thumbFramePress = false
 						end)
 						while thumbFramePress do
-							if tick() - thumbFrameTick >= 0.3 and checkMouseInGui(scrollThumbFrame) then doTick() end
+							if tick() - thumbFrameTick >= 0.3 and checkMouseInGui(scrollThumbFrame) then
+								doTick()
+							end
 							wait()
 						end
 					end)
 
-					newFrame.MouseWheelForward:Connect(function() self:ScrollTo(self.Index - self.WheelIncrement) end)
+					newFrame.MouseWheelForward:Connect(function()
+						self:ScrollTo(self.Index - self.WheelIncrement)
+					end)
 
-					newFrame.MouseWheelBackward:Connect(function() self:ScrollTo(self.Index + self.WheelIncrement) end)
+					newFrame.MouseWheelBackward:Connect(function()
+						self:ScrollTo(self.Index + self.WheelIncrement)
+					end)
 
 					self.GuiElems.ScrollThumb = scrollThumb
 					self.GuiElems.ScrollThumbFrame = scrollThumbFrame
@@ -3883,11 +4235,15 @@ local EmbeddedModules = {
 					end
 				end
 
-				funcs.AddMarker = function(self, ind, color) self.Markers[ind] = color or Color3.new(0, 0, 0) end
+				funcs.AddMarker = function(self, ind, color)
+					self.Markers[ind] = color or Color3.new(0, 0, 0)
+				end
 				funcs.ScrollTo = function(self, ind, nocallback)
 					self.Index = ind
 					self:Update()
-					if not nocallback then self.Scrolled:Fire() end
+					if not nocallback then
+						self.Scrolled:Fire()
+					end
 				end
 				funcs.ScrollUp = function(self)
 					self.Index = self.Index - self.Increment
@@ -3897,9 +4253,15 @@ local EmbeddedModules = {
 					self.Index = self.Index + self.Increment
 					self:Update()
 				end
-				funcs.CanScrollUp = function(self) return self.Index > 0 end
-				funcs.CanScrollDown = function(self) return self.Index + self.VisibleSpace < self.TotalSpace end
-				funcs.GetScrollPercent = function(self) return self.Index / (self.TotalSpace - self.VisibleSpace) end
+				funcs.CanScrollUp = function(self)
+					return self.Index > 0
+				end
+				funcs.CanScrollDown = function(self)
+					return self.Index + self.VisibleSpace < self.TotalSpace
+				end
+				funcs.GetScrollPercent = function(self)
+					return self.Index / (self.TotalSpace - self.VisibleSpace)
+				end
 				funcs.SetScrollPercent = function(self, perc)
 					self.Index = math.floor(perc * (self.TotalSpace - self.VisibleSpace))
 					self:Update()
@@ -3929,12 +4291,12 @@ local EmbeddedModules = {
 						self.ScrollDownEvent:Disconnect()
 						self.ScrollDownEvent = nil
 					end
-					self.ScrollUpEvent = frame.MouseWheelForward:Connect(
-						function() self:ScrollTo(self.Index - self.WheelIncrement) end
-					)
-					self.ScrollDownEvent = frame.MouseWheelBackward:Connect(
-						function() self:ScrollTo(self.Index + self.WheelIncrement) end
-					)
+					self.ScrollUpEvent = frame.MouseWheelForward:Connect(function()
+						self:ScrollTo(self.Index - self.WheelIncrement)
+					end)
+					self.ScrollDownEvent = frame.MouseWheelBackward:Connect(function()
+						self:ScrollTo(self.Index + self.WheelIncrement)
+					end)
 				end
 
 				local mt = {}
@@ -4004,7 +4366,9 @@ local EmbeddedModules = {
 							local signX = dir:find("W", 1, true) and -1 or 1
 							local signY = dir:find("N", 1, true) and -1 or 1
 
-							if self.Minimized and isV then return end
+							if self.Minimized and isV then
+								return
+							end
 
 							if input.UserInputType == Enum.UserInputType.MouseMovement then
 								resizer.BackgroundTransparency = 0.5
@@ -4083,7 +4447,9 @@ local EmbeddedModules = {
 					local inc = 0
 					for i, v in pairs(side.Windows) do
 						inc = inc + (v.MinY or 100)
-						if inc > maxY - neededSize then return false end
+						if inc > maxY - neededSize then
+							return false
+						end
 					end
 
 					return true
@@ -4109,9 +4475,13 @@ local EmbeddedModules = {
 
 				local function focusInput(self, obj)
 					if isA(obj, "GuiButton") then
-						obj.MouseButton1Down:Connect(function() moveToTop(self) end)
+						obj.MouseButton1Down:Connect(function()
+							moveToTop(self)
+						end)
 					elseif isA(obj, "TextBox") then
-						obj.Focused:Connect(function() moveToTop(self) end)
+						obj.Focused:Connect(function()
+							moveToTop(self)
+						end)
 					end
 				end
 
@@ -4470,14 +4840,20 @@ local EmbeddedModules = {
 									and not self.Closed
 								then
 									if self.Aligned then
-										if leftSide.Resizing or rightSide.Resizing then return end
+										if leftSide.Resizing or rightSide.Resizing then
+											return
+										end
 										local posX, posY = input.Position.X - offX, input.Position.Y - offY
 										local delta = math.sqrt((posX - initX) ^ 2 + (posY - initY) ^ 2)
-										if delta >= 5 then self:SetAligned(false) end
+										if delta >= 5 then
+											self:SetAligned(false)
+										end
 									else
 										local inputX, inputY = input.Position.X, input.Position.Y
 										local posX, posY = inputX - offX, inputY - offY
-										if posY < 0 then posY = 0 end
+										if posY < 0 then
+											posY = 0
+										end
 										guiMain.Position = UDim2.new(0, posX, 0, posY)
 
 										if self.Resizable and self.Alignable then
@@ -4516,12 +4892,16 @@ local EmbeddedModules = {
 					end)
 
 					guiTopBar.Close.MouseButton1Click:Connect(function()
-						if self.Closed then return end
+						if self.Closed then
+							return
+						end
 						self:Close()
 					end)
 
 					guiTopBar.Minimize.MouseButton1Click:Connect(function()
-						if self.Closed then return end
+						if self.Closed then
+							return
+						end
 						if self.Aligned then
 							self:SetAligned(false)
 						else
@@ -4530,7 +4910,9 @@ local EmbeddedModules = {
 					end)
 
 					guiTopBar.Minimize.MouseButton2Click:Connect(function()
-						if self.Closed then return end
+						if self.Closed then
+							return
+						end
 						if not self.Aligned then
 							self:SetMinimized(nil, 2)
 							guiTopBar.Minimize.BackgroundTransparency = 1
@@ -4564,7 +4946,9 @@ local EmbeddedModules = {
 
 					guiMain.Size = UDim2.new(0, self.SizeX, 0, self.SizeY)
 
-					gui.DescendantAdded:Connect(function(obj) focusInput(self, obj) end)
+					gui.DescendantAdded:Connect(function(obj)
+						focusInput(self, obj)
+					end)
 					local descs = gui:GetDescendants()
 					for i = 1, #descs do
 						focusInput(self, descs[i])
@@ -4756,7 +5140,9 @@ local EmbeddedModules = {
 						v:Disconnect()
 					end
 					for i, v in pairs(side.Frame:GetChildren()) do
-						if v.Name == "WindowResizer" then v:Destroy() end
+						if v.Name == "WindowResizer" then
+							v:Destroy()
+						end
 					end
 					side.ResizeCons = {}
 					side.Resizing = nil
@@ -4785,28 +5171,26 @@ local EmbeddedModules = {
 						if not isEnd then
 							local newTemplate = template:Clone()
 							newTemplate.Position = UDim2.new(1, -side.Width, 0, currentPos - 4)
-							side.ResizeCons[#side.ResizeCons + 1] = v.Gui.Main:GetPropertyChangedSignal("Size"):Connect(
-								function()
+							side.ResizeCons[#side.ResizeCons + 1] = v.Gui.Main
+								:GetPropertyChangedSignal("Size")
+								:Connect(function()
 									newTemplate.Position = UDim2.new(
 										1,
 										-side.Width,
 										0,
 										v.GuiElems.Main.Position.Y.Offset + v.GuiElems.Main.Size.Y.Offset
 									)
-								end
-							)
+								end)
 							side.ResizeCons[#side.ResizeCons + 1] = v.Gui.Main
 								:GetPropertyChangedSignal("Position")
-								:Connect(
-									function()
-										newTemplate.Position = UDim2.new(
-											1,
-											-side.Width,
-											0,
-											v.GuiElems.Main.Position.Y.Offset + v.GuiElems.Main.Size.Y.Offset
-										)
-									end
-								)
+								:Connect(function()
+									newTemplate.Position = UDim2.new(
+										1,
+										-side.Width,
+										0,
+										v.GuiElems.Main.Position.Y.Offset + v.GuiElems.Main.Size.Y.Offset
+									)
+								end)
 							sideResizerHook(newTemplate, "V", side, i)
 							newTemplate.Parent = side.Frame
 						end
@@ -4875,13 +5259,17 @@ local EmbeddedModules = {
 						newVal = set
 					end
 					self.Minimized = newVal
-					if not mode then mode = 1 end
+					if not mode then
+						mode = 1
+					end
 
 					local resizeControls = self.GuiElems.ResizeControls
 					local minimizeControls = { "North", "NorthEast", "NorthWest", "South", "SouthEast", "SouthWest" }
 					for i = 1, #minimizeControls do
 						local control = resizeControls:FindFirstChild(minimizeControls[i])
-						if control then control.Visible = not newVal end
+						if control then
+							control.Visible = not newVal
+						end
 					end
 
 					if mode == 1 or mode == 2 then
@@ -4940,7 +5328,9 @@ local EmbeddedModules = {
 
 				funcs.SetSize = funcs.Resize
 
-				funcs.SetTitle = function(self, title) self.GuiElems.Title.Text = title end
+				funcs.SetTitle = function(self, title)
+					self.GuiElems.Title.Text = title
+				end
 
 				funcs.SetResizable = function(self, val)
 					self.Resizable = val
@@ -4970,7 +5360,9 @@ local EmbeddedModules = {
 								break
 							end
 						end
-						if not table.find(visibleWindows, self) then table.insert(visibleWindows, 1, self) end
+						if not table.find(visibleWindows, self) then
+							table.insert(visibleWindows, 1, self)
+						end
 						self.GuiElems.Minimize.ImageLabel.Image = "rbxassetid://5034768003"
 						self.Side = nil
 						updateWindows()
@@ -4992,13 +5384,19 @@ local EmbeddedModules = {
 					else
 						obj.Parent = self.ContentPane
 					end
-					if name then self.Elements[name] = obj end
+					if name then
+						self.Elements[name] = obj
+					end
 				end
 
-				funcs.GetElement = function(self, obj, name) return self.Elements[name] end
+				funcs.GetElement = function(self, obj, name)
+					return self.Elements[name]
+				end
 
 				funcs.AlignTo = function(self, side, pos, size, silent)
-					if table.find(side.Windows, self) or self.Closed then return end
+					if table.find(side.Windows, self) or self.Closed then
+						return
+					end
 
 					size = size or self.SizeY
 					if size > 0 and size <= 1 then
@@ -5022,7 +5420,9 @@ local EmbeddedModules = {
 					self.SidePos = pos
 					table.insert(side.Windows, pos, self)
 
-					if not silent then side.Hidden = false end
+					if not silent then
+						side.Hidden = false
+					end
 					updateWindows(silent)
 				end
 
@@ -5052,12 +5452,16 @@ local EmbeddedModules = {
 						self:DoTween(self.GuiElems.Minimize.ImageLabel, ti, { ImageTransparency = 1 })
 						self:DoTween(self.GuiElems.Close.ImageLabel, ti, { ImageTransparency = 1 })
 						Lib.FastWait(0.2)
-						if closeTime ~= self.LastClose then return end
+						if closeTime ~= self.LastClose then
+							return
+						end
 
 						self:DoTween(self.GuiElems.TopBar, ti, { BackgroundTransparency = 1 })
 						self:DoTween(self.GuiElems.Outlines, ti, { ImageTransparency = 1 })
 						Lib.FastWait(0.2)
-						if closeTime ~= self.LastClose then return end
+						if closeTime ~= self.LastClose then
+							return
+						end
 					end
 
 					self.Aligned = false
@@ -5071,9 +5475,13 @@ local EmbeddedModules = {
 					return not self.Closed and ((self.Side and not self.Side.Hidden) or not self.Side)
 				end
 
-				funcs.IsContentVisible = function(self) return self:IsVisible() and not self.Minimized end
+				funcs.IsContentVisible = function(self)
+					return self:IsVisible() and not self.Minimized
+				end
 
-				funcs.Focus = function(self) moveToTop(self) end
+				funcs.Focus = function(self)
+					moveToTop(self)
+				end
 
 				funcs.MoveInBoundary = function(self)
 					local posX, posY = self.PosX, self.PosY
@@ -5096,7 +5504,9 @@ local EmbeddedModules = {
 					self.Tweens = {}
 				end
 
-				funcs.Show = function(self, data) return static.ShowWindow(self, data) end
+				funcs.Show = function(self, data)
+					return static.ShowWindow(self, data)
+				end
 
 				funcs.ShowAndFocus = function(self, data)
 					static.ShowWindow(self, data)
@@ -5142,7 +5552,9 @@ local EmbeddedModules = {
 							window:AlignTo(window.ClosedSide, window.SidePos, size, true)
 							static.SetSideVisible(window.ClosedSide, true)
 						else
-							if table.find(visibleWindows, window) then return end
+							if table.find(visibleWindows, window) then
+								return
+							end
 
 							-- TODO: make better
 							window.GuiElems.Main.Size = UDim2.new(0, window.SizeX, 0, 20)
@@ -5381,9 +5793,13 @@ local EmbeddedModules = {
 					Lib.ButtonAnim(leftToggle, { Mode = 2, PressColor = Color3.fromRGB(32, 32, 32) })
 					Lib.ButtonAnim(rightToggle, { Mode = 2, PressColor = Color3.fromRGB(32, 32, 32) })
 
-					leftToggle.MouseButton1Click:Connect(function() static.ToggleSide("left") end)
+					leftToggle.MouseButton1Click:Connect(function()
+						static.ToggleSide("left")
+					end)
 
-					rightToggle.MouseButton1Click:Connect(function() static.ToggleSide("right") end)
+					rightToggle.MouseButton1Click:Connect(function()
+						static.ToggleSide("right")
+					end)
 
 					leftToggle.Parent = sidesGui
 					rightToggle.Parent = sidesGui
@@ -5692,7 +6108,9 @@ local EmbeddedModules = {
 									end
 								end
 							end
-							table.sort(results, function(a, b) return a.Name < b.Name end)
+							table.sort(results, function(a, b)
+								return a.Name < b.Name
+							end)
 							for i = 1, #results do
 								local entry = map[results[i]]
 								entry.LayoutOrder = i
@@ -5736,7 +6154,9 @@ local EmbeddedModules = {
 				end
 
 				funcs.AddRegistered = function(self, name, disabled)
-					if not self.Registered[name] then error(name .. " is not registered") end
+					if not self.Registered[name] then
+						error(name .. " is not registered")
+					end
 
 					if self.QueuedDivider then
 						local text = self.QueuedDividerText and #self.QueuedDividerText > 0 and self.QueuedDividerText
@@ -5760,7 +6180,9 @@ local EmbeddedModules = {
 					}
 				end
 
-				funcs.UnRegister = function(self, name) self.Registered[name] = nil end
+				funcs.UnRegister = function(self, name)
+					self.Registered[name] = nil
+				end
 
 				funcs.AddDivider = function(self, text)
 					self.QueuedDivider = false
@@ -5788,7 +6210,9 @@ local EmbeddedModules = {
 
 				funcs.Refresh = function(self)
 					for i, v in pairs(self.GuiElems.List:GetChildren()) do
-						if not v:IsA("UIListLayout") then v:Destroy() end
+						if not v:IsA("UIListLayout") then
+							v:Destroy()
+						end
 					end
 					local map = {}
 					self.ItemToEntryMap = map
@@ -5846,14 +6270,18 @@ local EmbeddedModules = {
 								if item.OnClick then
 									newEntry.MouseButton1Click:Connect(function()
 										item.OnClick(item.Name)
-										if not item.NoHide then self:Hide() end
+										if not item.NoHide then
+											self:Hide()
+										end
 									end)
 								end
 
 								if item.OnRightClick then
 									newEntry.MouseButton2Click:Connect(function()
 										item.OnRightClick(item.Name)
-										if not item.NoHide then self:Hide() end
+										if not item.NoHide then
+											self:Hide()
+										end
 									end)
 								end
 							end
@@ -5884,7 +6312,9 @@ local EmbeddedModules = {
 					elems.SearchFrame.Visible = self.SearchEnabled
 					elems.List.Position = UDim2.new(0, 2, 0, 2 + (self.SearchEnabled and 24 or 0))
 					elems.List.Size = UDim2.new(1, -4, 1, -4 - (self.SearchEnabled and 24 or 0))
-					if self.SearchEnabled and self.ClearSearchOnShow then elems.SearchBar.Text = "" end
+					if self.SearchEnabled and self.ClearSearchOnShow then
+						elems.SearchBar.Text = ""
+					end
 					self.GuiElems.List.CanvasPosition = Vector2.new(0, 0)
 
 					if not self.Updated then
@@ -5897,7 +6327,9 @@ local EmbeddedModules = {
 					local maxX, maxY = mouse.ViewSizeX, mouse.ViewSizeY
 
 					-- Position and show
-					if x + self.Width > maxX then x = self.ReverseX and x - self.Width or maxX - self.Width end
+					if x + self.Width > maxX then
+						x = self.ReverseX and x - self.Width or maxX - self.Width
+					end
 					elems.Main.Position = UDim2.new(0, x, 0, y)
 					elems.Main.Size = UDim2.new(0, self.Width, 0, 0)
 					self.Gui.DisplayOrder = Main.DisplayOrders.Menu
@@ -5911,13 +6343,19 @@ local EmbeddedModules = {
 					else
 						elems.List.CanvasSize = UDim2.new(0, 0, 0, 0)
 					end
-					if y + toSize > maxY then reverseY = true end
+					if y + toSize > maxY then
+						reverseY = true
+					end
 
 					-- Close event
 					local closable
-					if self.CloseEvent then self.CloseEvent:Disconnect() end
+					if self.CloseEvent then
+						self.CloseEvent:Disconnect()
+					end
 					self.CloseEvent = service.UserInputService.InputBegan:Connect(function(input)
-						if not closable or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+						if not closable or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+							return
+						end
 
 						if not Lib.CheckMouseInGui(elems.Main) then
 							self.CloseEvent:Disconnect()
@@ -5950,11 +6388,15 @@ local EmbeddedModules = {
 
 					-- Close debounce
 					Lib.FastWait()
-					if self.SearchEnabled and self.FocusSearchOnShow then elems.SearchBar:CaptureFocus() end
+					if self.SearchEnabled and self.FocusSearchOnShow then
+						elems.SearchBar:CaptureFocus()
+					end
 					closable = true
 				end
 
-				funcs.Hide = function(self) self.Gui.Parent = nil end
+				funcs.Hide = function(self)
+					self.Gui.Parent = nil
+				end
 
 				funcs.ApplyTheme = function(self, data)
 					local theme = self.Theme
@@ -5970,7 +6412,9 @@ local EmbeddedModules = {
 
 				local mt = { __index = funcs }
 				local function new()
-					if not mouse then mouse = Main.Mouse or service.Players.LocalPlayer:GetMouse() end
+					if not mouse then
+						mouse = Main.Mouse or service.Players.LocalPlayer:GetMouse()
+					end
 
 					local obj = setmetatable({
 						Width = 200,
@@ -6192,7 +6636,9 @@ local EmbeddedModules = {
 
 					editBox:GetPropertyChangedSignal("Text"):Connect(function()
 						local text = editBox.Text
-						if #text == 0 or obj.EditBoxCopying then return end
+						if #text == 0 or obj.EditBoxCopying then
+							return
+						end
 						editBox.Text = ""
 						obj:AppendText(text)
 					end)
@@ -6362,7 +6808,9 @@ local EmbeddedModules = {
 
 					elems.ScrollCorner.Parent = frame
 					linesFrame.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 then obj:SetEditing(true, input) end
+						if input.UserInputType == Enum.UserInputType.MouseButton1 then
+							obj:SetEditing(true, input)
+						end
 					end)
 
 					obj.Frame = frame
@@ -6375,7 +6823,9 @@ local EmbeddedModules = {
 				end
 
 				funcs.GetSelectionText = function(self)
-					if not self:IsValidRange() then return "" end
+					if not self:IsValidRange() then
+						return ""
+					end
 
 					local selectionRange = self.SelectionRange
 					local selX, selY = selectionRange[1][1], selectionRange[1][2]
@@ -6383,9 +6833,13 @@ local EmbeddedModules = {
 					local deltaLines = sel2Y - selY
 					local lines = self.Lines
 
-					if not lines[selY + 1] or not lines[sel2Y + 1] then return "" end
+					if not lines[selY + 1] or not lines[sel2Y + 1] then
+						return ""
+					end
 
-					if deltaLines == 0 then return self:ConvertText(lines[selY + 1]:sub(selX + 1, sel2X), false) end
+					if deltaLines == 0 then
+						return self:ConvertText(lines[selY + 1]:sub(selX + 1, sel2X), false)
+					end
 
 					local leftSub = lines[selY + 1]:sub(selX + 1)
 					local rightSub = lines[sel2Y + 1]:sub(1, sel2X)
@@ -6411,10 +6865,14 @@ local EmbeddedModules = {
 				end
 
 				funcs.ConnectEditBoxEvent = function(self)
-					if self.EditBoxEvent then self.EditBoxEvent:Disconnect() end
+					if self.EditBoxEvent then
+						self.EditBoxEvent:Disconnect()
+					end
 
 					self.EditBoxEvent = service.UserInputService.InputBegan:Connect(function(input)
-						if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+						if input.UserInputType ~= Enum.UserInputType.Keyboard then
+							return
+						end
 
 						local keycodes = Enum.KeyCode
 						local keycode = input.KeyCode
@@ -6422,7 +6880,9 @@ local EmbeddedModules = {
 						local function setupMove(key, func)
 							local endCon, finished
 							endCon = service.UserInputService.InputEnded:Connect(function(input)
-								if input.KeyCode ~= key then return end
+								if input.KeyCode ~= key then
+									return
+								end
 								endCon:Disconnect()
 								finished = true
 							end)
@@ -6547,12 +7007,16 @@ local EmbeddedModules = {
 				end
 
 				funcs.DisconnectEditBoxEvent = function(self)
-					if self.EditBoxEvent then self.EditBoxEvent:Disconnect() end
+					if self.EditBoxEvent then
+						self.EditBoxEvent:Disconnect()
+					end
 				end
 
 				funcs.ResetSelection = function(self, norefresh)
 					self.SelectionRange = { { -1, -1 }, { -1, -1 } }
-					if not norefresh then self:Refresh() end
+					if not norefresh then
+						self:Refresh()
+					end
 				end
 
 				funcs.IsValidRange = function(self, range)
@@ -6560,21 +7024,27 @@ local EmbeddedModules = {
 					local selX, selY = selectionRange[1][1], selectionRange[1][2]
 					local sel2X, sel2Y = selectionRange[2][1], selectionRange[2][2]
 
-					if selX == -1 or (selX == sel2X and selY == sel2Y) then return false end
+					if selX == -1 or (selX == sel2X and selY == sel2Y) then
+						return false
+					end
 
 					return true
 				end
 
 				funcs.DeleteRange = function(self, range, noprocess, updatemouse)
 					range = range or self.SelectionRange
-					if not self:IsValidRange(range) then return end
+					if not self:IsValidRange(range) then
+						return
+					end
 
 					local lines = self.Lines
 					local selX, selY = range[1][1], range[1][2]
 					local sel2X, sel2Y = range[2][1], range[2][2]
 					local deltaLines = sel2Y - selY
 
-					if not lines[selY + 1] or not lines[sel2Y + 1] then return end
+					if not lines[selY + 1] or not lines[sel2Y + 1] then
+						return
+					end
 
 					local leftSub = lines[selY + 1]:sub(1, selX)
 					local rightSub = lines[sel2Y + 1]:sub(sel2X + 1)
@@ -6585,14 +7055,18 @@ local EmbeddedModules = {
 						remove(lines, selY + 2)
 					end
 
-					if range == self.SelectionRange then self.SelectionRange = { { -1, -1 }, { -1, -1 } } end
+					if range == self.SelectionRange then
+						self.SelectionRange = { { -1, -1 }, { -1, -1 } }
+					end
 					if updatemouse then
 						self.CursorX = selX
 						self.CursorY = selY
 						self:UpdateCursor()
 					end
 
-					if not noprocess then self:ProcessTextChange() end
+					if not noprocess then
+						self:ProcessTextChange()
+					end
 				end
 
 				funcs.AppendText = function(self, text)
@@ -6610,7 +7084,9 @@ local EmbeddedModules = {
 
 					for i = 1, #textLines do
 						local linePos = cursorY + i
-						if i > 1 then insert(lines, linePos, "") end
+						if i > 1 then
+							insert(lines, linePos, "")
+						end
 
 						local textLine = textLines[i]
 						local newBefore = (i == 1 and before or "")
@@ -6619,7 +7095,9 @@ local EmbeddedModules = {
 						lines[linePos] = newBefore .. textLine .. newAfter
 					end
 
-					if #textLines > 1 then cursorX = 0 end
+					if #textLines > 1 then
+						cursorX = 0
+					end
 
 					self:ProcessTextChange()
 					self.CursorX = cursorX + #textLines[#textLines]
@@ -6647,7 +7125,9 @@ local EmbeddedModules = {
 							.. (#right > 0 and right or " ")
 
 						for i, v in pairs(tabJumps) do
-							if selRange:find(i) then return v end
+							if selRange:find(i) then
+								return v
+							end
 						end
 					end
 					return 0
@@ -6671,7 +7151,9 @@ local EmbeddedModules = {
 					local animTime = tick()
 					self.LastAnimTime = animTime
 
-					if not on then return end
+					if not on then
+						return
+					end
 
 					lineTweens.Invis:Cancel()
 					lineTweens.Vis:Cancel()
@@ -6680,10 +7162,14 @@ local EmbeddedModules = {
 					coroutine.wrap(function()
 						while self.Editable do
 							Lib.FastWait(0.5)
-							if self.LastAnimTime ~= animTime then return end
+							if self.LastAnimTime ~= animTime then
+								return
+							end
 							lineTweens.Invis:Play()
 							Lib.FastWait(0.4)
-							if self.LastAnimTime ~= animTime then return end
+							if self.LastAnimTime ~= animTime then
+								return
+							end
 							lineTweens.Vis:Play()
 							Lib.FastWait(0.2)
 						end
@@ -6697,7 +7183,9 @@ local EmbeddedModules = {
 					self:JumpToCursor()
 				end
 
-				funcs.JumpToCursor = function(self) self:Refresh() end
+				funcs.JumpToCursor = function(self)
+					self:Refresh()
+				end
 
 				funcs.UpdateCursor = function(self, input)
 					local linesFrame = self.GuiElems.LinesFrame
@@ -6796,7 +7284,9 @@ local EmbeddedModules = {
 						while x do
 							found[count] = x
 							foundMap[x] = typ
-							if extra then extras[x] = extra end
+							if extra then
+								extras[x] = extra
+							end
 
 							count = count + 1
 							init = y + 1
@@ -6820,7 +7310,9 @@ local EmbeddedModules = {
 
 					for i = 1, #found do
 						local pos = found[i]
-						if pos <= lastEnding then continue end
+						if pos <= lastEnding then
+							continue
+						end
 
 						local ending = pos
 						local typ = foundMap[pos]
@@ -6829,22 +7321,30 @@ local EmbeddedModules = {
 							while ending and sub(text, ending - 1, ending - 1) == "\\" do
 								ending = find(text, '"', ending + 1, true)
 							end
-							if not ending then ending = textLen end
+							if not ending then
+								ending = textLen
+							end
 						elseif typ == 2 then
 							ending = find(text, "'", pos + 1, true)
 							while ending and sub(text, ending - 1, ending - 1) == "\\" do
 								ending = find(text, "'", ending + 1, true)
 							end
-							if not ending then ending = textLen end
+							if not ending then
+								ending = textLen
+							end
 						elseif typ == 3 then
 							_, ending = find(text, "]" .. extras[pos] .. "]", pos + 1, true)
-							if not ending then ending = textLen end
+							if not ending then
+								ending = textLen
+							end
 						elseif typ == 4 then
 							local ahead = foundMap[pos + 2]
 
 							if ahead == 3 then
 								_, ending = find(text, "]" .. extras[pos + 2] .. "]", pos + 1, true)
-								if not ending then ending = textLen end
+								if not ending then
+									ending = textLen
+								end
 							else
 								ending = find(text, "\n", pos + 1, true) or textLen
 							end
@@ -6882,7 +7382,9 @@ local EmbeddedModules = {
 
 				funcs.HighlightLine = function(self, line)
 					local cached = self.ColoredLines[line]
-					if cached then return cached end
+					if cached then
+						return cached
+					end
 
 					local sub = string.sub
 					local find = string.find
@@ -6957,7 +7459,9 @@ local EmbeddedModules = {
 
 								lastWord = word
 								wordBeginsDotted = false
-								if funcStatus > 0 then funcStatus = 1 end
+								if funcStatus > 0 then
+									funcStatus = 1
+								end
 
 								if wordType then
 									currentType = wordType
@@ -7011,7 +7515,9 @@ local EmbeddedModules = {
 							else
 								highlights[col] = currentType
 								local _, endPos = find(lineText, "%s+", col)
-								if endPos then lastEnding = endPos end
+								if endPos then
+									lastEnding = endPos
+								end
 							end
 						end
 					end
@@ -7119,7 +7625,9 @@ local EmbeddedModules = {
 								and selRelaY <= sel2Row
 								and (selRelaY == selRow and selRelaX >= selColumn or selRelaY ~= selRow)
 								and (selRelaY == sel2Row and selRelaX < sel2Column or selRelaY ~= sel2Row)
-							if inSelection then posType = -999 end
+							if inSelection then
+								posType = -999
+							end
 
 							if posType ~= curType then
 								local template = (inSelection and selectionTemplate)
@@ -7221,7 +7729,9 @@ local EmbeddedModules = {
 
 					for i = 1, #lines do
 						local lineLen = #lines[i]
-						if lineLen > maxCols then maxCols = lineLen end
+						if lineLen > maxCols then
+							maxCols = lineLen
+						end
 					end
 
 					self.MaxTextCols = maxCols
@@ -7286,7 +7796,9 @@ local EmbeddedModules = {
 				local mt = { __index = funcs }
 
 				local function new()
-					if not builtInInited then initBuiltIn() end
+					if not builtInInited then
+						initBuiltIn()
+					end
 
 					local scrollV = Lib.ScrollBar.new()
 					local scrollH = Lib.ScrollBar.new(true)
@@ -7658,7 +8170,9 @@ local EmbeddedModules = {
 				funcs.SetState = function(self, val, anim)
 					self.Toggled = val
 
-					if self.OutlineColorTween then self.OutlineColorTween:Cancel() end
+					if self.OutlineColorTween then
+						self.OutlineColorTween:Cancel()
+					end
 					local setStateTime = tick()
 					self.LastSetStateTime = setStateTime
 
@@ -7672,7 +8186,9 @@ local EmbeddedModules = {
 								)
 								self.OutlineColorTween:Play()
 								delay(0.15, function()
-									if setStateTime ~= self.LastSetStateTime then return end
+									if setStateTime ~= self.LastSetStateTime then
+										return
+									end
 									self:Paint()
 									TweenSize(self.GuiElems.Checkmark, ud2o(14, 20), "Out", "Bounce", 2 / 15, true)
 								end)
@@ -7697,7 +8213,9 @@ local EmbeddedModules = {
 								)
 								self.OutlineColorTween:Play()
 								delay(0.15, function()
-									if setStateTime ~= self.LastSetStateTime then return end
+									if setStateTime ~= self.LastSetStateTime then
+										return
+									end
 									self:Paint()
 									TweenSize(self.GuiElems.Checkmark, ud2o(0, 20), "Out", "Quad", 1 / 15, true)
 								end)
@@ -7912,13 +8430,21 @@ local EmbeddedModules = {
 					Lib.ShowGui(self.Gui)
 					local sizeX, sizeY = self.Gui.Frame.AbsoluteSize.X, self.Gui.Frame.AbsoluteSize.Y
 
-					if x + sizeX > maxX then x = self.ReverseX and x - sizeX or maxX - sizeX end
-					if y + sizeY > maxY then reverseY = true end
+					if x + sizeX > maxX then
+						x = self.ReverseX and x - sizeX or maxX - sizeX
+					end
+					if y + sizeY > maxY then
+						reverseY = true
+					end
 
 					local closable = false
-					if self.CloseEvent then self.CloseEvent:Disconnect() end
+					if self.CloseEvent then
+						self.CloseEvent:Disconnect()
+					end
 					self.CloseEvent = service.UserInputService.InputBegan:Connect(function(input)
-						if not closable or input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+						if not closable or input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+							return
+						end
 
 						if not Lib.CheckMouseInGui(self.Gui.Frame) then
 							self.CloseEvent:Disconnect()
@@ -9486,10 +10012,14 @@ local EmbeddedModules = {
 								local pressing = true
 								local startNum = tonumber(frame.Text)
 
-								if not startNum then return end
+								if not startNum then
+									return
+								end
 
 								releaseEvent = user.InputEnded:Connect(function(input)
-									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+										return
+									end
 									releaseEvent:Disconnect()
 									pressing = false
 								end)
@@ -9522,10 +10052,14 @@ local EmbeddedModules = {
 								local pressing = true
 								local startNum = tonumber(frame.Text)
 
-								if not startNum then return end
+								if not startNum then
+									return
+								end
 
 								releaseEvent = user.InputEnded:Connect(function(input)
-									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+										return
+									end
 									releaseEvent:Disconnect()
 									pressing = false
 								end)
@@ -9554,13 +10088,17 @@ local EmbeddedModules = {
 							local releaseEvent, mouseEvent
 
 							releaseEvent = user.InputEnded:Connect(function(input)
-								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+									return
+								end
 								releaseEvent:Disconnect()
 								mouseEvent:Disconnect()
 							end)
 
 							mouseEvent = user.InputChanged:Connect(function(input)
-								if input.UserInputType == Enum.UserInputType.MouseMovement then colorSpaceInput() end
+								if input.UserInputType == Enum.UserInputType.MouseMovement then
+									colorSpaceInput()
+								end
 							end)
 
 							colorSpaceInput()
@@ -9572,13 +10110,17 @@ local EmbeddedModules = {
 							local releaseEvent, mouseEvent
 
 							releaseEvent = user.InputEnded:Connect(function(input)
-								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+								if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+									return
+								end
 								releaseEvent:Disconnect()
 								mouseEvent:Disconnect()
 							end)
 
 							mouseEvent = user.InputChanged:Connect(function(input)
-								if input.UserInputType == Enum.UserInputType.MouseMovement then colorStripInput() end
+								if input.UserInputType == Enum.UserInputType.MouseMovement then
+									colorStripInput()
+								end
 							end)
 
 							colorStripInput()
@@ -9595,7 +10137,9 @@ local EmbeddedModules = {
 							updateColor(1)
 						end
 					end
-					hueInput.FocusLost:Connect(function() updateHue(hueInput.Text) end)
+					hueInput.FocusLost:Connect(function()
+						updateHue(hueInput.Text)
+					end)
 					hookButtons(hueInput, updateHue)
 
 					local function updateSat(str)
@@ -9608,7 +10152,9 @@ local EmbeddedModules = {
 							updateColor(1)
 						end
 					end
-					satInput.FocusLost:Connect(function() updateSat(satInput.Text) end)
+					satInput.FocusLost:Connect(function()
+						updateSat(satInput.Text)
+					end)
 					hookButtons(satInput, updateSat)
 
 					local function updateVal(str)
@@ -9621,7 +10167,9 @@ local EmbeddedModules = {
 							updateColor(1)
 						end
 					end
-					valInput.FocusLost:Connect(function() updateVal(valInput.Text) end)
+					valInput.FocusLost:Connect(function()
+						updateVal(valInput.Text)
+					end)
 					hookButtons(valInput, updateVal)
 
 					local function updateRed(str)
@@ -9634,7 +10182,9 @@ local EmbeddedModules = {
 							updateColor(2)
 						end
 					end
-					redInput.FocusLost:Connect(function() updateRed(redInput.Text) end)
+					redInput.FocusLost:Connect(function()
+						updateRed(redInput.Text)
+					end)
 					hookButtons(redInput, updateRed)
 
 					local function updateGreen(str)
@@ -9647,7 +10197,9 @@ local EmbeddedModules = {
 							updateColor(2)
 						end
 					end
-					greenInput.FocusLost:Connect(function() updateGreen(greenInput.Text) end)
+					greenInput.FocusLost:Connect(function()
+						updateGreen(greenInput.Text)
+					end)
 					hookButtons(greenInput, updateGreen)
 
 					local function updateBlue(str)
@@ -9660,7 +10212,9 @@ local EmbeddedModules = {
 							updateColor(2)
 						end
 					end
-					blueInput.FocusLost:Connect(function() updateBlue(blueInput.Text) end)
+					blueInput.FocusLost:Connect(function()
+						updateBlue(blueInput.Text)
+					end)
 					hookButtons(blueInput, updateBlue)
 
 					local colorChoice = Instance.new("TextButton")
@@ -9758,7 +10312,9 @@ local EmbeddedModules = {
 						updateColor()
 					end
 
-					newMt.Show = function(self) self.Window:Show() end
+					newMt.Show = function(self)
+						self.Window:Show()
+					end
 
 					return newMt
 				end
@@ -10168,7 +10724,9 @@ local EmbeddedModules = {
 						envelopeDragTop.Line.Size = UDim2.new(0, 3, 0, 20)
 
 						releaseEvent = user.InputEnded:Connect(function(input)
-							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+								return
+							end
 							mouseEvent:Disconnect()
 							releaseEvent:Disconnect()
 							envelopeDragTop.Line.Position = UDim2.new(0, 3, 0, 0)
@@ -10205,7 +10763,9 @@ local EmbeddedModules = {
 						envelopeDragBottom.Line.Size = UDim2.new(0, 3, 0, 20)
 
 						releaseEvent = user.InputEnded:Connect(function(input)
-							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+							if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+								return
+							end
 							mouseEvent:Disconnect()
 							releaseEvent:Disconnect()
 							envelopeDragBottom.Line.Position = UDim2.new(0, 3, 0, 0)
@@ -10267,7 +10827,9 @@ local EmbeddedModules = {
 								local oldEnvelope = point[3]
 
 								releaseEvent = user.InputEnded:Connect(function(input)
-									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+										return
+									end
 									mouseEvent:Disconnect()
 									releaseEvent:Disconnect()
 									currentlySelected = nil
@@ -10278,12 +10840,20 @@ local EmbeddedModules = {
 									if input.UserInputType == Enum.UserInputType.MouseMovement then
 										local maxX = numberLine.AbsoluteSize.X - 1
 										local relativeX = mouse.X - numberLine.AbsolutePosition.X
-										if relativeX < 0 then relativeX = 0 end
-										if relativeX > maxX then relativeX = maxX end
+										if relativeX < 0 then
+											relativeX = 0
+										end
+										if relativeX > maxX then
+											relativeX = maxX
+										end
 										local maxY = numberLine.AbsoluteSize.Y - 1
 										local relativeY = mouse.Y - numberLine.AbsolutePosition.Y
-										if relativeY < 0 then relativeY = 0 end
-										if relativeY > maxY then relativeY = maxY end
+										if relativeY < 0 then
+											relativeY = 0
+										end
+										if relativeY > maxY then
+											relativeY = maxY
+										end
 										if point ~= beginPoint and point ~= endPoint then
 											point[2] = relativeX / maxX
 										end
@@ -10313,7 +10883,9 @@ local EmbeddedModules = {
 
 					local function redraw(self)
 						local numberLineSize = numberLine.AbsoluteSize
-						table.sort(points, function(a, b) return a[2] < b[2] end)
+						table.sort(points, function(a, b)
+							return a[2] < b[2]
+						end)
 						for i, v in pairs(points) do
 							v[4].Position = UDim2.new(
 								0,
@@ -10338,11 +10910,15 @@ local EmbeddedModules = {
 							local maxRise = math.abs(toPoint[4].Position.Y.Offset - fromPoint[4].Position.Y.Offset)
 
 							for lineCount = math.min(fromPoint[4].Position.X.Offset + 1, toPoint[4].Position.X.Offset), toPoint[4].Position.X.Offset do
-								if deltaX == 0 and deltaY == 0 then return end
+								if deltaX == 0 and deltaY == 0 then
+									return
+								end
 								local riseNow = math.floor(currentRise)
 								local line = lines[lineCount + 3]
 								if line then
-									if totalRise + riseNow > maxRise then riseNow = maxRise - totalRise end
+									if totalRise + riseNow > maxRise then
+										riseNow = maxRise - totalRise
+									end
 									if math.sign(slope) == -1 then
 										line.Position = UDim2.new(
 											0,
@@ -10386,7 +10962,9 @@ local EmbeddedModules = {
 					local function loadSequence(self, seq)
 						resetSequence = seq
 						for i, v in pairs(points) do
-							if v[4] then v[4]:Destroy() end
+							if v[4] then
+								v[4]:Destroy()
+							end
 						end
 						points = {}
 						for i, v in pairs(seq.Keypoints) do
@@ -10463,16 +11041,26 @@ local EmbeddedModules = {
 								return
 							end
 							for i, v in pairs(points) do
-								if Lib.CheckMouseInGui(v[4].Select) then return end
+								if Lib.CheckMouseInGui(v[4].Select) then
+									return
+								end
 							end
 							local maxX = numberLine.AbsoluteSize.X - 1
 							local relativeX = mouse.X - numberLine.AbsolutePosition.X
-							if relativeX < 0 then relativeX = 0 end
-							if relativeX > maxX then relativeX = maxX end
+							if relativeX < 0 then
+								relativeX = 0
+							end
+							if relativeX > maxX then
+								relativeX = maxX
+							end
 							local maxY = numberLine.AbsoluteSize.Y - 1
 							local relativeY = mouse.Y - numberLine.AbsolutePosition.Y
-							if relativeY < 0 then relativeY = 0 end
-							if relativeY > maxY then relativeY = maxY end
+							if relativeY < 0 then
+								relativeY = 0
+							end
+							if relativeY > maxY then
+								relativeY = maxY
+							end
 
 							local raw = relativeX / maxX
 							local newPoint = { 10 - (relativeY / maxY) * 10, raw, 0 }
@@ -10506,7 +11094,9 @@ local EmbeddedModules = {
 						end
 					end)
 
-					closeButton.MouseButton1Click:Connect(function() window:Close() end)
+					closeButton.MouseButton1Click:Connect(function()
+						window:Close()
+					end)
 
 					buttonAnimations(deleteButton)
 					buttonAnimations(resetButton)
@@ -10515,7 +11105,9 @@ local EmbeddedModules = {
 					placePoints()
 					redraw()
 
-					newMt.Show = function(self) window:Show() end
+					newMt.Show = function(self)
+						window:Show()
+					end
 
 					return newMt
 				end
@@ -10841,12 +11433,16 @@ local EmbeddedModules = {
 					newMt.Sequence = ColorSequence.new(Color3.new(1, 1, 1))
 					local function buildSequence(noupdate)
 						local newPoints = {}
-						table.sort(colors, function(a, b) return a[2] < b[2] end)
+						table.sort(colors, function(a, b)
+							return a[2] < b[2]
+						end)
 						for i, v in pairs(colors) do
 							table.insert(newPoints, ColorSequenceKeypoint.new(v[2], v[1]))
 						end
 						newMt.Sequence = ColorSequence.new(newPoints)
-						if not noupdate then newMt.OnSelect:Fire(newMt.Sequence) end
+						if not noupdate then
+							newMt.OnSelect:Fire(newMt.Sequence)
+						end
 					end
 
 					local function round(num, places)
@@ -10876,13 +11472,17 @@ local EmbeddedModules = {
 							end
 							if input.UserInputType == Enum.UserInputType.MouseButton1 then
 								updateInputs(point)
-								if point == beginPoint or point == endPoint or currentlySelected then return end
+								if point == beginPoint or point == endPoint or currentlySelected then
+									return
+								end
 
 								local mouseEvent, releaseEvent
 								currentlySelected = true
 
 								releaseEvent = user.InputEnded:Connect(function(input)
-									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+									if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+										return
+									end
 									mouseEvent:Disconnect()
 									releaseEvent:Disconnect()
 									currentlySelected = nil
@@ -10893,8 +11493,12 @@ local EmbeddedModules = {
 									if input.UserInputType == Enum.UserInputType.MouseMovement then
 										local maxSize = colorLine.AbsoluteSize.X - 1
 										local relativeX = mouse.X - colorLine.AbsolutePosition.X
-										if relativeX < 0 then relativeX = 0 end
-										if relativeX > maxSize then relativeX = maxSize end
+										if relativeX < 0 then
+											relativeX = 0
+										end
+										if relativeX > maxSize then
+											relativeX = maxSize
+										end
 										local raw = relativeX / maxSize
 										point[2] = relativeX / maxSize
 										updateInputs(point)
@@ -10908,7 +11512,9 @@ local EmbeddedModules = {
 						end)
 
 						newArrow.InputEnded:Connect(function(input)
-							if input.UserInputType == Enum.UserInputType.MouseMovement then cursor.Visible = false end
+							if input.UserInputType == Enum.UserInputType.MouseMovement then
+								cursor.Visible = false
+							end
 						end)
 
 						return newArrow
@@ -10934,7 +11540,9 @@ local EmbeddedModules = {
 					local function loadSequence(self, seq)
 						resetSequence = seq
 						for i, v in pairs(colors) do
-							if v[3] then v[3]:Destroy() end
+							if v[3] then
+								v[3]:Destroy()
+							end
 						end
 						colors = {}
 						currentlySelected = nil
@@ -10969,8 +11577,12 @@ local EmbeddedModules = {
 						if input.UserInputType == Enum.UserInputType.MouseButton1 and #colors < 20 then
 							local maxSize = colorLine.AbsoluteSize.X - 1
 							local relativeX = mouse.X - colorLine.AbsolutePosition.X
-							if relativeX < 0 then relativeX = 0 end
-							if relativeX > maxSize then relativeX = maxSize end
+							if relativeX < 0 then
+								relativeX = 0
+							end
+							if relativeX > maxSize then
+								relativeX = maxSize
+							end
 
 							local raw = relativeX / maxSize
 							local fromColor = nil
@@ -10997,8 +11609,12 @@ local EmbeddedModules = {
 						if input.UserInputType == Enum.UserInputType.MouseMovement then
 							local maxSize = colorLine.AbsoluteSize.X - 1
 							local relativeX = mouse.X - colorLine.AbsolutePosition.X
-							if relativeX < 0 then relativeX = 0 end
-							if relativeX > maxSize then relativeX = maxSize end
+							if relativeX < 0 then
+								relativeX = 0
+							end
+							if relativeX > maxSize then
+								relativeX = maxSize
+							end
 							cursor.Visible = true
 							cursor.Position = UDim2.new(0, 10 + relativeX, 0, 0)
 						end
@@ -11008,10 +11624,14 @@ local EmbeddedModules = {
 						if input.UserInputType == Enum.UserInputType.MouseMovement then
 							local inArrow = false
 							for i, v in pairs(colors) do
-								if Lib.CheckMouseInGui(v[3]) then inArrow = v[3] end
+								if Lib.CheckMouseInGui(v[3]) then
+									inArrow = v[3]
+								end
 							end
 							cursor.Visible = inArrow and true or false
-							if inArrow then cursor.Position = UDim2.new(0, 9 + inArrow.Position.X.Offset, 0, 0) end
+							if inArrow then
+								cursor.Position = UDim2.new(0, 9 + inArrow.Position.X.Offset, 0, 0)
+							end
 						end
 					end)
 
@@ -11034,7 +11654,9 @@ local EmbeddedModules = {
 								editor.Window:SetTitle("ColorSequence Color Picker")
 
 								editor.OnSelect:Connect(function(col)
-									if currentPoint then currentPoint[1] = col end
+									if currentPoint then
+										currentPoint[1] = col
+									end
 									buildSequence()
 									redraw()
 								end)
@@ -11063,12 +11685,18 @@ local EmbeddedModules = {
 					end)
 
 					resetButton.MouseButton1Click:Connect(function()
-						if resetSequence then newMt:SetSequence(resetSequence) end
+						if resetSequence then
+							newMt:SetSequence(resetSequence)
+						end
 					end)
 
-					closeButton.MouseButton1Click:Connect(function() window:Close() end)
+					closeButton.MouseButton1Click:Connect(function()
+						window:Close()
+					end)
 
-					topClose.MouseButton1Click:Connect(function() window:Close() end)
+					topClose.MouseButton1Click:Connect(function()
+						window:Close()
+					end)
 
 					buttonAnimations(deleteButton)
 					buttonAnimations(resetButton)
@@ -11077,7 +11705,9 @@ local EmbeddedModules = {
 					placeArrows()
 					redraw()
 
-					newMt.Show = function(self) window:Show() end
+					newMt.Show = function(self)
+						window:Show()
+					end
 
 					return newMt
 				end
@@ -11103,7 +11733,9 @@ local EmbeddedModules = {
 						self.TextBox.Position = UDim2.new(0, 0, 0, 0)
 						return
 					end
-					if cursorPos == -1 then return end
+					if cursorPos == -1 then
+						return
+					end
 
 					local cursorText = text:sub(1, cursorPos - 1)
 					local pos = nil
@@ -11137,9 +11769,13 @@ local EmbeddedModules = {
 					end
 				end
 
-				funcs.GetText = function(self) return self.TextBox.Text end
+				funcs.GetText = function(self)
+					return self.TextBox.Text
+				end
 
-				funcs.SetText = function(self, text) self.TextBox.Text = text end
+				funcs.SetText = function(self, text)
+					self.TextBox.Text = text
+				end
 
 				local mt = getGuiMT(props, funcs)
 
@@ -11168,7 +11804,9 @@ local EmbeddedModules = {
 					textbox.Changed:Connect(function(prop)
 						if prop == "Text" or prop == "CursorPosition" or prop == "AbsoluteSize" then
 							local cursorPos = obj.TextBox.CursorPosition
-							if cursorPos ~= -1 then obj.CursorPos = cursorPos end
+							if cursorPos ~= -1 then
+								obj.CursorPos = cursorPos
+							end
 							obj:Update()
 						end
 					end)
@@ -11295,13 +11933,25 @@ local EmbeddedModules = {
 						OutlineColor = Settings.Theme.Outline2,
 					})
 
-					b.MouseButton1Click:Connect(function() obj:Trigger("Click", 1) end)
-					b.MouseButton1Down:Connect(function() obj:Trigger("Down", 1) end)
-					b.MouseButton1Up:Connect(function() obj:Trigger("Up", 1) end)
+					b.MouseButton1Click:Connect(function()
+						obj:Trigger("Click", 1)
+					end)
+					b.MouseButton1Down:Connect(function()
+						obj:Trigger("Down", 1)
+					end)
+					b.MouseButton1Up:Connect(function()
+						obj:Trigger("Up", 1)
+					end)
 
-					b.MouseButton2Click:Connect(function() obj:Trigger("Click", 2) end)
-					b.MouseButton2Down:Connect(function() obj:Trigger("Down", 2) end)
-					b.MouseButton2Up:Connect(function() obj:Trigger("Up", 2) end)
+					b.MouseButton2Click:Connect(function()
+						obj:Trigger("Click", 2)
+					end)
+					b.MouseButton2Down:Connect(function()
+						obj:Trigger("Down", 2)
+					end)
+					b.MouseButton2Up:Connect(function()
+						obj:Trigger("Up", 2)
+					end)
 
 					return obj
 				end
@@ -11461,7 +12111,9 @@ local EmbeddedModules = {
 					obj.Context.MaxHeight = 200
 					obj.Selected = nil
 					obj.GuiElems = { Label = label }
-					f.MouseButton1Down:Connect(function() obj:ShowOptions() end)
+					f.MouseButton1Down:Connect(function()
+						obj:ShowOptions()
+					end)
 					obj:Update()
 					return obj
 				end
@@ -11488,7 +12140,9 @@ local EmbeddedModules = {
 
 				local disconnect = function(con)
 					local pos = table.find(con.Signal.Connections, con)
-					if pos then table.remove(con.Signal.Connections, pos) end
+					if pos then
+						table.remove(con.Signal.Connections, pos)
+					end
 				end
 
 				funcs.Trigger = function(self, item, button)
@@ -11525,11 +12179,17 @@ local EmbeddedModules = {
 				end
 
 				funcs.Add = function(self, item)
-					if table.find(self.Items, item) then return end
+					if table.find(self.Items, item) then
+						return
+					end
 
 					local cons = {}
-					cons[1] = item.MouseButton1Down:Connect(function() self:Trigger(item, 1) end)
-					cons[2] = item.MouseButton2Down:Connect(function() self:Trigger(item, 2) end)
+					cons[1] = item.MouseButton1Down:Connect(function()
+						self:Trigger(item, 1)
+					end)
+					cons[2] = item.MouseButton2Down:Connect(function()
+						self:Trigger(item, 2)
+					end)
 
 					self.ItemCons[item] = cons
 					self.Items[#self.Items + 1] = item
@@ -11537,7 +12197,9 @@ local EmbeddedModules = {
 
 				funcs.Remove = function(self, item)
 					local ind = table.find(self.Items, item)
-					if not ind then return end
+					if not ind then
+						return
+					end
 
 					for i, v in pairs(self.ItemCons[item]) do
 						v:Disconnect()
@@ -11799,15 +12461,21 @@ local EmbeddedModules = {
 				elseif typeName == "Vector2" then
 					local vals = str:split(",")
 					local x, y = tonumber(vals[1]), tonumber(vals[2])
-					if x and y and #vals >= 2 then return Vector2.new(x, y) end
+					if x and y and #vals >= 2 then
+						return Vector2.new(x, y)
+					end
 				elseif typeName == "Vector3" then
 					local vals = str:split(",")
 					local x, y, z = tonumber(vals[1]), tonumber(vals[2]), tonumber(vals[3])
-					if x and y and z and #vals >= 3 then return Vector3.new(x, y, z) end
+					if x and y and z and #vals >= 3 then
+						return Vector3.new(x, y, z)
+					end
 				elseif typeName == "UDim" then
 					local vals = str:split(",")
 					local scale, offset = tonumber(vals[1]), tonumber(vals[2])
-					if scale and offset and #vals >= 2 then return UDim.new(scale, offset) end
+					if scale and offset and #vals >= 2 then
+						return UDim.new(scale, offset)
+					end
 				elseif typeName == "UDim2" then
 					local vals = str:gsub("[{}]", ""):split(",")
 					local xScale, xOffset, yScale, yOffset =
@@ -11818,24 +12486,34 @@ local EmbeddedModules = {
 				elseif typeName == "CFrame" then
 					local vals = str:split(",")
 					local s, result = pcall(CFrame.new, unpack(vals))
-					if s and #vals >= 12 then return result end
+					if s and #vals >= 12 then
+						return result
+					end
 				elseif typeName == "Rect" then
 					local vals = str:split(",")
 					local s, result = pcall(Rect.new, unpack(vals))
-					if s and #vals >= 4 then return result end
+					if s and #vals >= 4 then
+						return result
+					end
 				elseif typeName == "Ray" then
 					local vals = str:gsub("[{}]", ""):split(",")
 					local s, origin = pcall(Vector3.new, unpack(vals, 1, 3))
 					local s2, direction = pcall(Vector3.new, unpack(vals, 4, 6))
-					if s and s2 and #vals >= 6 then return Ray.new(origin, direction) end
+					if s and s2 and #vals >= 6 then
+						return Ray.new(origin, direction)
+					end
 				elseif typeName == "NumberRange" then
 					local vals = str:split(",")
 					local s, result = pcall(NumberRange.new, unpack(vals))
-					if s and #vals >= 1 then return result end
+					if s and #vals >= 1 then
+						return result
+					end
 				elseif typeName == "Color3" then
 					local vals = str:gsub("[{}]", ""):split(",")
 					local s, result = pcall(Color3.fromRGB, unpack(vals))
-					if s and #vals >= 3 then return result end
+					if s and #vals >= 3 then
+						return result
+					end
 				end
 
 				return nil
@@ -11862,7 +12540,11 @@ local EmbeddedModules = {
 
 			Properties.GetIndexableProps = function(obj, classData)
 				if not Main.Elevated then
-					if not pcall(function() return obj.ClassName end) then return nil end
+					if not pcall(function()
+						return obj.ClassName
+					end) then
+						return nil
+					end
 				end
 
 				local ignoreProps = Properties.IgnoreProps[classData.Name] or {}
@@ -11873,7 +12555,9 @@ local EmbeddedModules = {
 				for i = 1, #props do
 					local prop = props[i]
 					if not ignoreProps[prop.Name] then
-						local s = pcall(function() return obj[prop.Name] end)
+						local s = pcall(function()
+							return obj[prop.Name]
+						end)
 						if s then
 							result[count] = prop
 							count = count + 1
@@ -11886,7 +12570,9 @@ local EmbeddedModules = {
 
 			Properties.FindFirstObjWhichIsA = function(class)
 				local classList = Properties.ClassLists[class] or {}
-				if classList and #classList > 0 then return classList[1] end
+				if classList and #classList > 0 then
+					return classList[1]
+				end
 
 				return nil
 			end
@@ -11954,12 +12640,16 @@ local EmbeddedModules = {
 											firstObj = obj
 											firstSet = true
 										end
-										if ignored then break end
+										if ignored then
+											break
+										end
 									else
 										local propVal, skip
 										if isAttribute then
 											propVal = getAttribute(obj, attributeName)
-											if propVal == nil then skip = true end
+											if propVal == nil then
+												skip = true
+											end
 										else
 											propVal = obj[propName]
 										end
@@ -11989,7 +12679,9 @@ local EmbeddedModules = {
 													local propValSub = propVal
 
 													for j = 1, #indexes do
-														if not firstValSub or not propValSub then break end -- PhysicalProperties
+														if not firstValSub or not propValSub then
+															break
+														end -- PhysicalProperties
 														local indexName = indexes[j]
 														firstValSub = firstValSub[indexName]
 														propValSub = propValSub[indexName]
@@ -12003,15 +12695,21 @@ local EmbeddedModules = {
 												end
 											end
 
-											if conflictsFound == toCheck then break end
+											if conflictsFound == toCheck then
+												break
+											end
 										end
 									end
 
 									checked = checked + 1
-									if checked == maxConflictCheck then break end
+									if checked == maxConflictCheck then
+										break
+									end
 								end
 
-								if not conflictMap[1] then autoUpdateObjs[gName] = firstObj end
+								if not conflictMap[1] then
+									autoUpdateObjs[gName] = firstObj
+								end
 								for sPropInd = 1, subPropCount do
 									if not conflictMap[sPropInd + 1] then
 										autoUpdateObjs[gName .. "." .. subProps[sPropInd]] = firstObj
@@ -12022,7 +12720,9 @@ local EmbeddedModules = {
 					end
 				end
 
-				if p then Properties.Refresh() end
+				if p then
+					Properties.Refresh()
+				end
 			end
 
 			-- Fetches the properties to be displayed based on the explorer selection
@@ -12196,8 +12896,12 @@ local EmbeddedModules = {
 						local aIsSpecial = a.SpecialRow ~= nil
 						local bIsSpecial = b.SpecialRow ~= nil
 
-						if aIsSpecial and not bIsSpecial then return false end
-						if not aIsSpecial and bIsSpecial then return true end
+						if aIsSpecial and not bIsSpecial then
+							return false
+						end
+						if not aIsSpecial and bIsSpecial then
+							return true
+						end
 						if aIsSpecial and bIsSpecial then
 							return lower(a.Name or "") < lower(b.Name or "") -- Should be rare, sort by internal name
 						end
@@ -12207,7 +12911,9 @@ local EmbeddedModules = {
 						if aOrder ~= bOrder then
 							return aOrder < bOrder
 						else
-							if a.IsTag and b.IsTag then return lower(a.TagName) < lower(b.TagName) end
+							if a.IsTag and b.IsTag then
+								return lower(a.TagName) < lower(b.TagName)
+							end
 							local aSortName = a.DisplayName or a.Name
 							local bSortName = b.DisplayName or b.Name
 							return lower(aSortName or "") < lower(bSortName or "") -- Added (or "") for safety
@@ -12325,7 +13031,9 @@ local EmbeddedModules = {
 					result[3] = makeSubProp(prop, ".Z", { Name = "bool" })
 				end
 
-				if prop.Name == "SoundId" and prop.Class == "Sound" then result[1] = Properties.SoundPreviewProp end
+				if prop.Name == "SoundId" and prop.Class == "Sound" then
+					result[1] = Properties.SoundPreviewProp
+				end
 
 				return result
 			end
@@ -12358,7 +13066,9 @@ local EmbeddedModules = {
 
 						local visible
 						if searchText and depth == 1 then
-							if find(lower(displayNameForSearch), searchText, 1, true) then visible = true end
+							if find(lower(displayNameForSearch), searchText, 1, true) then
+								visible = true
+							end
 						else
 							visible = true
 						end
@@ -12372,13 +13082,17 @@ local EmbeddedModules = {
 						if (expanded["CAT_" .. category] and visible) or prop.SpecialRow then
 							if depth > 1 then
 								prop.Depth = depth
-								if depth > maxDepth then maxDepth = depth end
+								if depth > maxDepth then
+									maxDepth = depth
+								end
 							end
 
 							if isFirstScaleType then
 								local nameArr = subName and stringSplit(subName, ".")
 								local displayName = prop.DisplayName or (nameArr and nameArr[#nameArr]) or propName
-								if prop.IsTag then displayName = prop.TagName end
+								if prop.IsTag then
+									displayName = prop.TagName
+								end
 
 								local nameWidth = nameWidthCache[displayName]
 								if not nameWidth then
@@ -12387,19 +13101,25 @@ local EmbeddedModules = {
 								end
 
 								local totalWidth = nameWidth + entryIndent * depth
-								if totalWidth > maxWidth then maxWidth = totalWidth end
+								if totalWidth > maxWidth then
+									maxWidth = totalWidth
+								end
 							end
 
 							viewList[count] = prop
 							count = count + 1
 
 							local fullName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
-							if prop.IsTag then fullName = "TAG_CAT." .. prop.TagName end -- Tags don't expand further
+							if prop.IsTag then
+								fullName = "TAG_CAT." .. prop.TagName
+							end -- Tags don't expand further
 
 							if expanded[fullName] and not prop.IsTag then -- Tags don't have sub-props to expand
 								local nextDepth = depth + 1
 								local expandedProps = Properties.GetExpandedProps(prop)
-								if #expandedProps > 0 then recur(expandedProps, nextDepth) end
+								if #expandedProps > 0 then
+									recur(expandedProps, nextDepth)
+								end
 							end
 						end
 					end
@@ -12420,7 +13140,9 @@ local EmbeddedModules = {
 				newCheckbox.Gui.Parent = valueFrame
 				newCheckbox.OnInput:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
+					if not prop then
+						return
+					end
 
 					if prop.ValueType.Name == "PhysicalProperties" then
 						Properties.SetProp(prop, newCheckbox.Toggled and true or nil)
@@ -12438,8 +13160,12 @@ local EmbeddedModules = {
 
 				nameFrame.Expand.InputBegan:Connect(function(input)
 					local prop = viewList[index + Properties.Index]
-					if not prop or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-					if prop.IsTag then return end -- Tags don't expand
+					if not prop or input.UserInputType ~= Enum.UserInputType.MouseMovement then
+						return
+					end
+					if prop.IsTag then
+						return
+					end -- Tags don't expand
 
 					local fullName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 						or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -12452,8 +13178,12 @@ local EmbeddedModules = {
 
 				nameFrame.Expand.InputEnded:Connect(function(input)
 					local prop = viewList[index + Properties.Index]
-					if not prop or input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-					if prop.IsTag then return end -- Tags don't expand
+					if not prop or input.UserInputType ~= Enum.UserInputType.MouseMovement then
+						return
+					end
+					if prop.IsTag then
+						return
+					end -- Tags don't expand
 
 					local fullName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 						or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -12466,8 +13196,12 @@ local EmbeddedModules = {
 
 				nameFrame.Expand.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
-					if prop.IsTag then return end -- Tags don't expand
+					if not prop then
+						return
+					end
+					if prop.IsTag then
+						return
+					end -- Tags don't expand
 
 					local fullName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 						or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
@@ -12486,7 +13220,9 @@ local EmbeddedModules = {
 
 				nameFrame.PropName.InputBegan:Connect(function(input)
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
+					if not prop then
+						return
+					end
 					if input.UserInputType == Enum.UserInputType.MouseMovement and not nameFrame.PropName.TextFits then
 						local fullNameFrame = Properties.FullNameFrame
 						local nameArr = string.split(prop.Class .. "." .. prop.Name .. (prop.SubName or ""), ".")
@@ -12520,22 +13256,30 @@ local EmbeddedModules = {
 
 				valueFrame.ValueBox.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
-					if prop.IsTag then return end -- Tags don't have editable values here
+					if not prop then
+						return
+					end
+					if prop.IsTag then
+						return
+					end -- Tags don't have editable values here
 
 					Properties.SetInputProp(prop, index)
 				end)
 
 				valueFrame.ColorButton.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
+					if not prop then
+						return
+					end
 
 					Properties.SetInputProp(prop, index, "color")
 				end)
 
 				valueFrame.RightButton.MouseButton1Click:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
+					if not prop then
+						return
+					end
 
 					local fullName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
 					local inputFullName = inputProp
@@ -12551,7 +13295,9 @@ local EmbeddedModules = {
 
 				newEntry.RowButton.MouseButton1Click:Connect(function()
 					local prop = viewList[index + Properties.Index] -- Get current prop for context
-					if not prop or not prop.SpecialRow then return end
+					if not prop or not prop.SpecialRow then
+						return
+					end
 
 					if prop.SpecialRow == "AddAttribute" then
 						Properties.DisplayAddAttributeWindow()
@@ -12562,7 +13308,9 @@ local EmbeddedModules = {
 
 				newEntry.EditAttributeButton.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop then return end
+					if not prop then
+						return
+					end
 
 					Properties.DisplayAttributeContext(prop)
 				end)
@@ -12570,7 +13318,9 @@ local EmbeddedModules = {
 				-- New: EditTagButton
 				newEntry.EditTagButton.MouseButton1Down:Connect(function()
 					local prop = viewList[index + Properties.Index]
-					if not prop or not prop.IsTag then return end
+					if not prop or not prop.IsTag then
+						return
+					end
 					Properties.DisplayTagContext(prop)
 				end)
 
@@ -12579,33 +13329,45 @@ local EmbeddedModules = {
 						Properties.SetSoundPreview(false)
 					else
 						local soundObj = Properties.FindFirstObjWhichIsA("Sound")
-						if soundObj then Properties.SetSoundPreview(soundObj) end
+						if soundObj then
+							Properties.SetSoundPreview(soundObj)
+						end
 					end
 				end)
 
 				valueFrame.SoundPreview.InputBegan:Connect(function(input)
-					if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+					if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+						return
+					end
 
 					local releaseEvent, mouseEvent
 					releaseEvent = service.UserInputService.InputEnded:Connect(function(input)
-						if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+						if input.UserInputType ~= Enum.UserInputType.MouseButton1 then
+							return
+						end
 						releaseEvent:Disconnect()
 						mouseEvent:Disconnect()
 					end)
 
 					local timeLine = newEntry.ValueFrame.SoundPreview.TimeLine
 					local soundObj = Properties.FindFirstObjWhichIsA("Sound")
-					if soundObj then Properties.SetSoundPreview(soundObj, true) end
+					if soundObj then
+						Properties.SetSoundPreview(soundObj, true)
+					end
 
 					local function update(input)
 						local sound = Properties.PreviewSound
-						if not sound or sound.TimeLength == 0 then return end
+						if not sound or sound.TimeLength == 0 then
+							return
+						end
 
 						local mouseX = input.Position.X
 						local timeLineSize = timeLine.AbsoluteSize
 						local relaX = mouseX - timeLine.AbsolutePosition.X
 
-						if timeLineSize.X <= 1 then return end
+						if timeLineSize.X <= 1 then
+							return
+						end
 						if relaX < 0 then
 							relaX = 0
 						elseif relaX >= timeLineSize.X then
@@ -12619,7 +13381,9 @@ local EmbeddedModules = {
 					update(input)
 
 					mouseEvent = service.UserInputService.InputChanged:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseMovement then update(input) end
+						if input.UserInputType == Enum.UserInputType.MouseMovement then
+							update(input)
+						end
 					end)
 				end)
 
@@ -12651,7 +13415,9 @@ local EmbeddedModules = {
 
 			Properties.GetSoundPreviewEntry = function()
 				for i = 1, #viewList do
-					if viewList[i] == Properties.SoundPreviewProp then return propEntries[i - Properties.Index] end
+					if viewList[i] == Properties.SoundPreviewProp then
+						return propEntries[i - Properties.Index]
+					end
 				end
 			end
 
@@ -12666,10 +13432,14 @@ local EmbeddedModules = {
 							Main.MiscIcons:DisplayByKey(entry.GuiElems.SoundPreview.ControlButton.Icon, "Play")
 						end
 					end)
-					sound.Resumed:Connect(function() Properties.Refresh() end)
+					sound.Resumed:Connect(function()
+						Properties.Refresh()
+					end)
 					sound.Ended:Connect(function()
 						local entry = Properties.GetSoundPreviewEntry()
-						if entry then entry.GuiElems.SoundPreviewSlider.Position = UDim2.new(0, -4, 0, -8) end
+						if entry then
+							entry.GuiElems.SoundPreviewSlider.Position = UDim2.new(0, -4, 0, -8)
+						end
 						Properties.Refresh()
 					end)
 					sound.Parent = window.Gui
@@ -12683,8 +13453,12 @@ local EmbeddedModules = {
 					sound.SoundId = soundObj.SoundId
 					sound.PlaybackSpeed = soundObj.PlaybackSpeed
 					sound.Volume = soundObj.Volume
-					if newId then sound.TimePosition = 0 end
-					if not noplay then sound:Resume() end
+					if newId then
+						sound.TimePosition = 0
+					end
+					if not noplay then
+						sound:Resume()
+					end
 
 					coroutine.wrap(function()
 						local previewTime = tick()
@@ -12713,7 +13487,12 @@ local EmbeddedModules = {
 				end
 				context:Clear()
 
-				context:Add({ Name = "Edit", OnClick = function() Properties.DisplayAddAttributeWindow(prop) end })
+				context:Add({
+					Name = "Edit",
+					OnClick = function()
+						Properties.DisplayAddAttributeWindow(prop)
+					end,
+				})
 				context:Add({
 					Name = "Delete",
 					OnClick = function()
@@ -12772,9 +13551,9 @@ local EmbeddedModules = {
 					nameBox.Position = UDim2.new(0, 75, 0, 10)
 					nameBox.Size = UDim2.new(0, 120, 0, 20)
 					win:Add(nameBox, "NameBox")
-					nameBox.TextBox
-						:GetPropertyChangedSignal("Text")
-						:Connect(function() saveButton:SetDisabled(#nameBox:GetText() == 0) end)
+					nameBox.TextBox:GetPropertyChangedSignal("Text"):Connect(function()
+						saveButton:SetDisabled(#nameBox:GetText() == 0)
+					end)
 
 					local typeLabel = Lib.Label.new()
 					typeLabel.Text = "Type"
@@ -12888,9 +13667,9 @@ local EmbeddedModules = {
 					nameBox.Position = UDim2.new(0, 75, 0, 10)
 					nameBox.Size = UDim2.new(0, 120, 0, 20)
 					win:Add(nameBox, "NameBox")
-					nameBox.TextBox
-						:GetPropertyChangedSignal("Text")
-						:Connect(function() saveButton:SetDisabled(#nameBox:GetText() == 0) end)
+					nameBox.TextBox:GetPropertyChangedSignal("Text"):Connect(function()
+						saveButton:SetDisabled(#nameBox:GetText() == 0)
+					end)
 
 					local errorLabel = Lib.Label.new()
 					errorLabel.Text = ""
@@ -12963,7 +13742,9 @@ local EmbeddedModules = {
 				local typeData = prop.ValueType
 				local typeName = typeData.Name
 
-				if prop.IsTag then return false end -- Tags are not text-editable in the value box
+				if prop.IsTag then
+					return false
+				end -- Tags are not text-editable in the value box
 
 				return typeName ~= "bool"
 					and typeData.Category ~= "Enum"
@@ -12981,25 +13762,33 @@ local EmbeddedModules = {
 					Properties.EnumDropdown = context
 				end
 
-				if not inputProp or inputProp.ValueType.Category ~= "Enum" then return end
+				if not inputProp or inputProp.ValueType.Category ~= "Enum" then
+					return
+				end
 				local prop = inputProp
 
 				local entry = propEntries[entryIndex]
 				local valueFrame = entry.GuiElems.ValueFrame
 
 				local enum = Enum[prop.ValueType.Name]
-				if not enum then return end
+				if not enum then
+					return
+				end
 
 				local sorted = {}
 				for name, enumItem in next, enum:GetEnumItems() do -- Fixed: enum:GetEnumItems()
 					sorted[#sorted + 1] = enumItem
 				end
-				table.sort(sorted, function(a, b) return a.Name < b.Name end)
+				table.sort(sorted, function(a, b)
+					return a.Name < b.Name
+				end)
 
 				context:Clear()
 
 				local function onClick(name)
-					if prop ~= inputProp then return end
+					if prop ~= inputProp then
+						return
+					end
 
 					local enumItem = enum[name]
 					inputProp = nil
@@ -13023,9 +13812,13 @@ local EmbeddedModules = {
 					editor.ReverseYOffset = 22
 
 					editor.OnSelect:Connect(function(col)
-						if not editor.CurrentProp or editor.CurrentProp.ValueType.Name ~= "BrickColor" then return end
+						if not editor.CurrentProp or editor.CurrentProp.ValueType.Name ~= "BrickColor" then
+							return
+						end
 
-						if editor.CurrentProp == inputProp then inputProp = nil end
+						if editor.CurrentProp == inputProp then
+							inputProp = nil
+						end
 						Properties.SetProp(editor.CurrentProp, BrickColor.new(col))
 					end)
 
@@ -13063,13 +13856,19 @@ local EmbeddedModules = {
 					editor = Lib.ColorPicker.new()
 
 					editor.OnSelect:Connect(function(col)
-						if not editor.CurrentProp then return end
+						if not editor.CurrentProp then
+							return
+						end
 						local typeName = editor.CurrentProp.ValueType.Name
-						if typeName ~= "Color3" and typeName ~= "BrickColor" then return end
+						if typeName ~= "Color3" and typeName ~= "BrickColor" then
+							return
+						end
 
 						local colVal = (typeName == "Color3" and col or BrickColor.new(col))
 
-						if editor.CurrentProp == inputProp then inputProp = nil end
+						if editor.CurrentProp == inputProp then
+							inputProp = nil
+						end
 						Properties.SetProp(editor.CurrentProp, colVal)
 					end)
 
@@ -13081,7 +13880,9 @@ local EmbeddedModules = {
 					editor:SetColor(col)
 				else
 					local firstVal = Properties.GetFirstPropVal(prop)
-					if firstVal then editor:SetColor(firstVal) end
+					if firstVal then
+						editor:SetColor(firstVal)
+					end
 				end
 				editor:Show()
 			end
@@ -13096,7 +13897,9 @@ local EmbeddedModules = {
 							return
 						end
 
-						if editor.CurrentProp == inputProp then inputProp = nil end
+						if editor.CurrentProp == inputProp then
+							inputProp = nil
+						end
 						Properties.SetProp(editor.CurrentProp, val)
 					end)
 
@@ -13108,7 +13911,9 @@ local EmbeddedModules = {
 					editor:SetSequence(seq)
 				else
 					local firstVal = Properties.GetFirstPropVal(prop)
-					if firstVal then editor:SetSequence(firstVal) end
+					if firstVal then
+						editor:SetSequence(firstVal)
+					end
 				end
 				editor:Show()
 			end
@@ -13123,7 +13928,9 @@ local EmbeddedModules = {
 							return
 						end
 
-						if editor.CurrentProp == inputProp then inputProp = nil end
+						if editor.CurrentProp == inputProp then
+							inputProp = nil
+						end
 						Properties.SetProp(editor.CurrentProp, val)
 					end)
 
@@ -13135,7 +13942,9 @@ local EmbeddedModules = {
 					editor:SetSequence(seq)
 				else
 					local firstVal = Properties.GetFirstPropVal(prop)
-					if firstVal then editor:SetSequence(firstVal) end
+					if firstVal then
+						editor:SetSequence(firstVal)
+					end
 				end
 				editor:Show()
 			end
@@ -13145,12 +13954,18 @@ local EmbeddedModules = {
 					return prop.TagName
 				end
 				local first = Properties.FindFirstObjWhichIsA(prop.Class)
-				if first then return Properties.GetPropVal(prop, first) end
+				if first then
+					return Properties.GetPropVal(prop, first)
+				end
 			end
 
 			Properties.GetPropVal = function(prop, obj)
-				if prop.MultiType then return "<Multiple Types>" end
-				if not obj then return end
+				if prop.MultiType then
+					return "<Multiple Types>"
+				end
+				if not obj then
+					return
+				end
 
 				if prop.IsTag then -- For tags, the "value" is simply their presence (identified by TagName).
 					-- This function is more about property values. For display, TagName is used.
@@ -13161,12 +13976,16 @@ local EmbeddedModules = {
 				local propVal
 				if prop.IsAttribute then
 					propVal = getAttribute(obj, prop.AttributeName)
-					if propVal == nil then return nil end
+					if propVal == nil then
+						return nil
+					end
 
 					local typ = typeof(propVal)
 					local currentType = Properties.TypeNameConvert[typ] or typ
 					if prop.RootType then
-						if prop.RootType.Name ~= currentType then return nil end
+						if prop.RootType.Name ~= currentType then
+							return nil
+						end
 					elseif prop.ValueType.Name ~= currentType then
 						return nil
 					end
@@ -13177,7 +13996,9 @@ local EmbeddedModules = {
 					local indexes = string.split(prop.SubName, ".")
 					for i = 1, #indexes do
 						local indexName = indexes[i]
-						if #indexName > 0 and propVal then propVal = propVal[indexName] end
+						if #indexName > 0 and propVal then
+							propVal = propVal[indexName]
+						end
 					end
 				end
 
@@ -13207,7 +14028,9 @@ local EmbeddedModules = {
 				local typeName = typeData.Name
 				local tags = prop.Tags
 				local gName = prop.Class .. "." .. prop.Name .. (prop.SubName or "")
-				if prop.IsTag then gName = "TAG_DISPLAY." .. prop.TagName end -- Unique identifier for display state
+				if prop.IsTag then
+					gName = "TAG_DISPLAY." .. prop.TagName
+				end -- Unique identifier for display state
 
 				local propObj = autoUpdateObjs[gName] -- This won't apply directly to tags for auto-update values
 				local entryData = propEntries[entryIndex]
@@ -13227,7 +14050,9 @@ local EmbeddedModules = {
 				local propVal = Properties.GetPropVal(prop, propObj) -- For tags, this returns TagName
 				local inputFullName = inputProp
 					and (inputProp.Class .. "." .. inputProp.Name .. (inputProp.SubName or ""))
-				if inputProp and inputProp.IsTag then inputFullName = "TAG_DISPLAY." .. inputProp.TagName end
+				if inputProp and inputProp.IsTag then
+					inputFullName = "TAG_DISPLAY." .. inputProp.TagName
+				end
 
 				local offset = 4
 				local endOffset = 6
@@ -13321,14 +14146,11 @@ local EmbeddedModules = {
 							valueBox.Text = propVal.Name
 						elseif Properties.RoundableTypes[typeName] and Settings.Properties.NumberRounding then
 							local rawStr = Properties.ValueToString(prop, propVal)
-							valueBox.Text = rawStr:gsub(
-								"-?%d+%.%d+",
-								function(num)
-									return tostring(
-										tonumber(("%." .. Settings.Properties.NumberRounding .. "f"):format(num))
-									)
-								end
-							)
+							valueBox.Text = rawStr:gsub("-?%d+%.%d+", function(num)
+								return tostring(
+									tonumber(("%." .. Settings.Properties.NumberRounding .. "f"):format(num))
+								)
+							end)
 						else
 							valueBox.Text = Properties.ValueToString(prop, propVal)
 						end
@@ -13413,7 +14235,9 @@ local EmbeddedModules = {
 
 							local gName = (prop.CategoryName and "CAT_" .. prop.CategoryName)
 								or prop.Class .. "." .. prop.Name .. (prop.SubName or "")
-							if prop.IsTag then gName = "TAG_CAT." .. prop.TagName end -- Unique for tags category items
+							if prop.IsTag then
+								gName = "TAG_CAT." .. prop.TagName
+							end -- Unique for tags category items
 
 							if prop.CategoryName then
 								entry.BackgroundColor3 = Settings.Theme.Main1
@@ -13438,7 +14262,9 @@ local EmbeddedModules = {
 								editAttributeButton.Visible = (prop.IsAttribute and not prop.RootType)
 								editTagButton.Visible = prop.IsTag
 
-								if editAttributeButton.Visible or editTagButton.Visible then actionButtonOffset = 20 end
+								if editAttributeButton.Visible or editTagButton.Visible then
+									actionButtonOffset = 20
+								end
 
 								if prop.IsTag then
 									valueFrame.Visible = false -- No value frame for tags, name is in NameFrame
@@ -13477,11 +14303,15 @@ local EmbeddedModules = {
 								if propObj and not prop.IsTag then -- Only connect signals for actual properties/attributes
 									if prop.IsAttribute then
 										propCons[#propCons + 1] = getAttributeChangedSignal(propObj, prop.AttributeName):Connect(
-											function() Properties.DisplayProp(prop, i) end
+											function()
+												Properties.DisplayProp(prop, i)
+											end
 										)
 									else
 										propCons[#propCons + 1] = getPropChangedSignal(propObj, propName):Connect(
-											function() Properties.DisplayProp(prop, i) end
+											function()
+												Properties.DisplayProp(prop, i)
+											end
 										)
 									end
 								end
@@ -13530,7 +14360,9 @@ local EmbeddedModules = {
 									nameFrame.BackgroundTransparency = 1
 									valueFrame.BackgroundColor3 = Settings.Theme.Main1
 									valueFrame.BackgroundTransparency = 1
-									if not prop.IsTag then valueBox.Visible = beforeVisible end
+									if not prop.IsTag then
+										valueBox.Visible = beforeVisible
+									end
 								end
 							end
 
@@ -13562,7 +14394,9 @@ local EmbeddedModules = {
 					end
 				end
 
-				if not inputPropVisible then inputBox.Visible = false end
+				if not inputPropVisible then
+					inputBox.Visible = false
+				end
 
 				for i = maxEntries + 1, #propEntries do
 					propEntries[i].Gui:Destroy()
@@ -13595,7 +14429,9 @@ local EmbeddedModules = {
 							if oldTagName and oldTagName ~= newTagName then -- If old tag exists and is different from new (or new is nil)
 								CollectionService:RemoveTag(obj, oldTagName)
 							end
-							if newTagName and #newTagName > 0 then CollectionService:AddTag(obj, newTagName) end
+							if newTagName and #newTagName > 0 then
+								CollectionService:AddTag(obj, newTagName)
+							end
 						end)
 					end
 					if not noupdate then
@@ -13754,7 +14590,9 @@ local EmbeddedModules = {
 										else
 											currentFaceVal = root[face]
 										end
-										if currentFaceVal then faces[#faces + 1] = Enum.NormalId[face] end
+										if currentFaceVal then
+											faces[#faces + 1] = Enum.NormalId[face]
+										end
 									end
 									setVal = Faces.new(unpack(faces))
 								elseif rootTypeName == "Axes" then
@@ -13767,7 +14605,9 @@ local EmbeddedModules = {
 										else
 											currentAxeVal = root[axe]
 										end
-										if currentAxeVal then axes[#axes + 1] = Enum.Axis[axe] end
+										if currentAxeVal then
+											axes[#axes + 1] = Enum.Axis[axe]
+										end
 									end
 									setVal = Axes.new(unpack(axes))
 								elseif rootTypeName == "NumberRange" then
@@ -13841,7 +14681,9 @@ local EmbeddedModules = {
 				inputBox.Parent = Properties.Window.GuiElems.Content.List
 
 				inputTextBox.FocusLost:Connect(function()
-					if not inputProp then return end
+					if not inputProp then
+						return
+					end
 					if inputProp.IsTag then
 						inputProp = nil
 						Properties.Refresh()
@@ -13867,7 +14709,9 @@ local EmbeddedModules = {
 			end
 
 			Properties.SetInputProp = function(prop, entryIndex, special)
-				if prop.IsTag then return end -- Tags don't use this input mechanism
+				if prop.IsTag then
+					return
+				end -- Tags don't use this input mechanism
 
 				local typeData = prop.ValueType
 				local typeName = typeData.Name
@@ -13875,7 +14719,9 @@ local EmbeddedModules = {
 				local propObj = autoUpdateObjs[fullName]
 				local propVal = Properties.GetPropVal(prop, propObj)
 
-				if prop.Tags.ReadOnly then return end
+				if prop.Tags.ReadOnly then
+					return
+				end
 
 				inputProp = prop
 				if special then
@@ -14466,7 +15312,9 @@ local EmbeddedModules = {
 				-- Vars
 				categoryOrder = API.CategoryOrder
 				for category, _ in next, categoryOrder do
-					if not Properties.CollapsedCategories[category] then expanded["CAT_" .. category] = true end
+					if not Properties.CollapsedCategories[category] then
+						expanded["CAT_" .. category] = true
+					end
 				end
 				expanded["Sound.SoundId"] = true
 				expanded["CAT_Tags"] = not Properties.CollapsedCategories["Tags"] -- Ensure Tags category starts expanded by default if not in CollapsedCategories
@@ -14516,7 +15364,9 @@ local EmbeddedModules = {
 				scrollH.Increment = 5
 				scrollH.WheelIncrement = 20
 				scrollH.Gui.Position = UDim2.new(0, 0, 1, -16)
-				scrollH.Scrolled:Connect(function() Properties.Refresh() end)
+				scrollH.Scrolled:Connect(function()
+					Properties.Refresh()
+				end)
 
 				-- Setup Gui
 				window.GuiElems.Line.Position = UDim2.new(0, 0, 0, 22)
@@ -14581,7 +15431,9 @@ local EmbeddedModules = {
 			local window, codeFrame
 
 			ScriptViewer.ViewScript = function(scr)
-				local s, source = pcall(decompile or function() return end, scr)
+				local s, source = pcall(decompile or function()
+					return
+				end, scr)
 				if not source or source == "" then
 					source =
 						"local test = 5\n\nlocal c = test + tick()\ngame.Workspace.Board:Destroy()\nstring.match('wow\\'f',\"yes\",3.4e-5,true)\ngame. Workspace.Wow\nfunction bar() print(54) end\n string . match() string 4 .match()"
@@ -14855,12 +15707,18 @@ Main = (function()
 				control = EmbeddedModules[name]()
 
 				-- TODO: Remove when open source
-				if gethsfuncs then control = _G.moduleData end
+				if gethsfuncs then
+					control = _G.moduleData
+				end
 
-				if not control then Main.Error("Missing Embedded Module: " .. name) end
+				if not control then
+					Main.Error("Missing Embedded Module: " .. name)
+				end
 			elseif _G.DebugLoadModel then -- Load Debug Model File
 				local model = Main.DebugModel
-				if not model then model = game:GetObjects(getsynasset("AfterModules.rbxm"))[1] end
+				if not model then
+					model = game:GetObjects(getsynasset("AfterModules.rbxm"))[1]
+				end
 
 				control = loadstring(model.Modules[name].Source)()
 				print("Locally Loaded Module", name, control)
@@ -14873,17 +15731,23 @@ Main = (function()
 						game,
 						"https://api.github.com/repos/" .. Main.GitRepoName .. "/ModuleHashs.dat"
 					)
-					if not s then Main.Error("Failed to get module hashs") end
+					if not s then
+						Main.Error("Failed to get module hashs")
+					end
 
 					local s, hashData = pcall(service.HttpService.JSONDecode, service.HttpService, hashDataStr)
-					if not s then Main.Error("Failed to decode module hash JSON") end
+					if not s then
+						Main.Error("Failed to decode module hash JSON")
+					end
 
 					hashs = hashData
 					Main.ModuleHashData = hashs
 				end
 
 				-- Check if local copy exists with matching hashs
-				local hashfunc = (syn and syn.crypt.hash) or function() return "" end
+				local hashfunc = (syn and syn.crypt.hash) or function()
+					return ""
+				end
 				local filePath = "dex/ModuleCache/" .. name .. ".lua"
 				local s, moduleStr = pcall(env.readfile, filePath)
 
@@ -14896,7 +15760,9 @@ Main = (function()
 						game,
 						"https://api.github.com/repos/" .. Main.GitRepoName .. "/Modules/" .. name .. ".lua"
 					)
-					if not s then Main.Error("Failed to get external module data of " .. name) end
+					if not s then
+						Main.Error("Failed to get external module data of " .. name)
+					end
 
 					env.writefile(filePath, moduleStr)
 					control = loadstring(moduleStr)()
@@ -14910,7 +15776,9 @@ Main = (function()
 			return moduleData
 		else
 			local module = script:WaitForChild("Modules"):WaitForChild(name, 2)
-			if not module then Main.Error("CANNOT FIND MODULE " .. name) end
+			if not module then
+				Main.Error("CANNOT FIND MODULE " .. name)
+			end
 
 			local control = require(module)
 			Main.AppControls[name] = control
@@ -14925,7 +15793,9 @@ Main = (function()
 	Main.LoadModules = function()
 		for i, v in pairs(Main.ModuleList) do
 			local s, e = pcall(Main.LoadModule, v)
-			if not s then Main.Error("FAILED LOADING " .. v .. " CAUSE " .. e) end
+			if not s then
+				Main.Error("FAILED LOADING " .. v .. " CAUSE " .. e)
+			end
 		end
 
 		-- Init Major Apps and define them in modules
@@ -14943,7 +15813,9 @@ Main = (function()
 		Main.AppControls.Lib.InitAfterMain(appTable)
 		for i, v in pairs(Main.ModuleList) do
 			local control = Main.AppControls[v]
-			if control then control.InitAfterMain(appTable) end
+			if control then
+				control.InitAfterMain(appTable)
+			end
 		end
 	end
 
@@ -14984,7 +15856,9 @@ Main = (function()
 		env.getnilinstances = getnilinstances or get_nil_instances
 		env.getloadedmodules = getloadedmodules
 
-		if identifyexecutor then Main.Executor = identifyexecutor() end
+		if identifyexecutor then
+			Main.Executor = identifyexecutor()
+		end
 
 		Main.GuiHolder = Main.Elevated and service.CoreGui or plr:FindFirstChildOfClass("PlayerGui")
 
@@ -15060,7 +15934,9 @@ Main = (function()
 		local function recur(t, res)
 			for set, val in pairs(t) do
 				if type(val) == "table" and val._Recurse then
-					if type(res[set]) ~= "table" then res[set] = {} end
+					if type(res[set]) ~= "table" then
+						res[set] = {}
+					end
 					recur(val, res[set])
 				else
 					res[set] = val
@@ -15098,11 +15974,15 @@ Main = (function()
 
 		local function insertAbove(t, item, aboveItem)
 			local findPos = table.find(t, item)
-			if not findPos then return end
+			if not findPos then
+				return
+			end
 			table.remove(t, findPos)
 
 			local pos = table.find(t, aboveItem)
-			if not pos then return end
+			if not pos then
+				return
+			end
 			table.insert(t, pos, item)
 		end
 
@@ -15190,7 +16070,9 @@ Main = (function()
 		end
 
 		local function getMember(class, member)
-			if not classes[class] or not classes[class][member] then return end
+			if not classes[class] or not classes[class][member] then
+				return
+			end
 			local result = {}
 
 			local currentClass = classes[class]
@@ -15201,7 +16083,9 @@ Main = (function()
 				currentClass = currentClass.Superclass
 			end
 
-			table.sort(result, function(a, b) return a.Name < b.Name end)
+			table.sort(result, function(a, b)
+				return a.Name < b.Name
+			end)
 			return result
 		end
 
@@ -15354,7 +16238,9 @@ Main = (function()
 	end
 
 	Main.ShowGui = function(gui)
-		if env.protectgui then env.protectgui(gui) end
+		if env.protectgui then
+			env.protectgui(gui)
+		end
 		gui.Parent = Main.GuiHolder
 		print(gui)
 	end
@@ -15602,7 +16488,9 @@ Main = (function()
 		local renderStepped = service.RunService.RenderStepped
 		local signalWait = renderStepped.wait
 		local fastwait = function(s)
-			if not s then return signalWait(renderStepped) end
+			if not s then
+				return signalWait(renderStepped)
+			end
 			local start = tick()
 			while tick() - start < s do
 				signalWait(renderStepped)
@@ -15617,7 +16505,9 @@ Main = (function()
 			tweenVal.Changed:Connect(func)
 			local tween = tweenS:Create(tweenVal, ti, { Value = n })
 			tween:Play()
-			tween.Completed:Connect(function() tweenVal:Destroy() end)
+			tween.Completed:Connect(function()
+				tweenVal:Destroy()
+			end)
 		end
 
 		local ti = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -15626,10 +16516,14 @@ Main = (function()
 			local start = NumberSequenceKeypoint.new(0, 0)
 			local a1 = NumberSequenceKeypoint.new(val, 0)
 			local a2 = NumberSequenceKeypoint.new(math.min(0.5, val + math.min(0.05, val)), 1)
-			if a1.Time == a2.Time then a2 = a1 end
+			if a1.Time == a2.Time then
+				a2 = a1
+			end
 			local b1 = NumberSequenceKeypoint.new(1 - val, 0)
 			local b2 = NumberSequenceKeypoint.new(math.max(0.5, 1 - val - math.min(0.05, val)), 1)
-			if b1.Time == b2.Time then b2 = b1 end
+			if b1.Time == b2.Time then
+				b2 = b1
+			end
 			local goal = NumberSequenceKeypoint.new(1, 0)
 			backGradient.Transparency = NumberSequence.new({ start, a1, a2, b2, b1, goal })
 			outlinesGradient.Transparency = NumberSequence.new({ start, a1, a2, b2, b1, goal })
@@ -15654,7 +16548,9 @@ Main = (function()
 				val = val / 100
 				local a1 = NumberSequenceKeypoint.new(1 - val, 0)
 				local a2 = NumberSequenceKeypoint.new(math.max(0, 1 - val - 0.01), 1)
-				if a1.Time == a2.Time then a2 = a1 end
+				if a1.Time == a2.Time then
+					a2 = a1
+				end
 				local start = NumberSequenceKeypoint.new(0, a1 == a2 and 0 or 1)
 				local goal = NumberSequenceKeypoint.new(1, 0)
 				obj.Transparency = NumberSequence.new({ start, a2, a1, goal })
@@ -15694,7 +16590,9 @@ Main = (function()
 				local start = NumberSequenceKeypoint.new(0, 0)
 				local a1 = NumberSequenceKeypoint.new(0.6 + val, 0)
 				local a2 = NumberSequenceKeypoint.new(math.min(1, 0.601 + val), 1)
-				if a1.Time == a2.Time then a2 = a1 end
+				if a1.Time == a2.Time then
+					a2 = a1
+				end
 				local goal = NumberSequenceKeypoint.new(1, a1 == a2 and 0 or 1)
 				holderGradient.Transparency = NumberSequence.new({ start, a1, a2, goal })
 			end)
@@ -15708,7 +16606,9 @@ Main = (function()
 				local start = NumberSequenceKeypoint.new(0, 1)
 				local a1 = NumberSequenceKeypoint.new(val, 1)
 				local a2 = NumberSequenceKeypoint.new(math.min(1, val + math.min(0.05, val)), 0)
-				if a1.Time == a2.Time then a2 = a1 end
+				if a1.Time == a2.Time then
+					a2 = a1
+				end
 				local goal = NumberSequenceKeypoint.new(1, a1 == a2 and 1 or 0)
 				outlinesGradient.Transparency = NumberSequence.new({ start, a1, a2, goal })
 				holderGradient.Transparency = NumberSequence.new({ start, a1, a2, goal })
@@ -15722,7 +16622,9 @@ Main = (function()
 	end
 
 	Main.CreateApp = function(data)
-		if Main.MenuApps[data.Name] then return end -- TODO: Handle conflict
+		if Main.MenuApps[data.Name] then
+			return
+		end -- TODO: Handle conflict
 		local control = {}
 
 		local app = Main.AppTemplate:Clone()
@@ -15746,22 +16648,34 @@ Main = (function()
 		end
 
 		local function enable(silent)
-			if data.Open then return end
+			if data.Open then
+				return
+			end
 			data.Open = true
 			updateState()
 			if not silent then
-				if data.Window then data.Window:Show() end
-				if data.OnClick then data.OnClick(data.Open) end
+				if data.Window then
+					data.Window:Show()
+				end
+				if data.OnClick then
+					data.OnClick(data.Open)
+				end
 			end
 		end
 
 		local function disable(silent)
-			if not data.Open then return end
+			if not data.Open then
+				return
+			end
 			data.Open = false
 			updateState()
 			if not silent then
-				if data.Window then data.Window:Hide() end
-				if data.OnClick then data.OnClick(data.Open) end
+				if data.Window then
+					data.Window:Hide()
+				end
+				if data.OnClick then
+					data.OnClick(data.Open)
+				end
 			end
 		end
 
@@ -15795,8 +16709,12 @@ Main = (function()
 
 		local window = data.Window
 		if window then
-			window.OnActivate:Connect(function() enable(true) end)
-			window.OnDeactivate:Connect(function() disable(true) end)
+			window.OnActivate:Connect(function()
+				enable(true)
+			end)
+			window.OnDeactivate:Connect(function()
+				disable(true)
+			end)
 		end
 
 		app.Visible = true
@@ -15813,7 +16731,9 @@ Main = (function()
 		Main.MainGuiOpen = val
 
 		Main.MainGui.OpenButton.Text = val and "X" or "Dex"
-		if val then Main.MainGui.OpenButton.MainFrame.Visible = true end
+		if val then
+			Main.MainGui.OpenButton.MainFrame.Visible = true
+		end
 		Main.MainGui.OpenButton.MainFrame:TweenSize(
 			val and UDim2.new(0, 224, 0, 200) or UDim2.new(0, 0, 0, 0),
 			Enum.EasingDirection.Out,
@@ -15830,7 +16750,9 @@ Main = (function()
 			)
 			:Play()
 
-		if Main.MainGuiMouseEvent then Main.MainGuiMouseEvent:Disconnect() end
+		if Main.MainGuiMouseEvent then
+			Main.MainGuiMouseEvent:Disconnect()
+		end
 
 		if not val then
 			local startTime = tick()
@@ -16105,7 +17027,9 @@ Main = (function()
 		openButton.BackgroundTransparency = 0.2
 		openButton.MainFrame.Size = UDim2.new(0, 0, 0, 0)
 		openButton.MainFrame.Visible = false
-		openButton.MouseButton1Click:Connect(function() Main.SetMainGuiOpen(not Main.MainGuiOpen) end)
+		openButton.MouseButton1Click:Connect(function()
+			Main.SetMainGuiOpen(not Main.MainGuiOpen)
+		end)
 
 		openButton.InputBegan:Connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -16159,7 +17083,9 @@ Main = (function()
 	end
 
 	Main.SetupFilesystem = function()
-		if not env.writefile or not env.makefolder then return end
+		if not env.writefile or not env.makefolder then
+			return
+		end
 
 		local writefile, makefolder = env.writefile, env.makefolder
 
@@ -16170,10 +17096,14 @@ Main = (function()
 		makefolder("dex/ModuleCache")
 	end
 
-	Main.LocalDepsUpToDate = function() return Main.DepsVersionData and Main.ClientVersion == Main.DepsVersionData[1] end
+	Main.LocalDepsUpToDate = function()
+		return Main.DepsVersionData and Main.ClientVersion == Main.DepsVersionData[1]
+	end
 
 	Main.Init = function()
-		Main.Elevated = pcall(function() local a = game:GetService("CoreGui"):GetFullName() end)
+		Main.Elevated = pcall(function()
+			local a = game:GetService("CoreGui"):GetFullName()
+		end)
 		Main.InitEnv()
 		Main.LoadSettings()
 		Main.SetupFilesystem()
@@ -16243,7 +17173,9 @@ Main = (function()
 			Main.ClientVersion = Version()
 			if fileVer then
 				Main.DepsVersionData = string.split(fileVer, "\n")
-				if Main.LocalDepsUpToDate() then Main.RobloxVersion = Main.DepsVersionData[2] end
+				if Main.LocalDepsUpToDate() then
+					Main.RobloxVersion = Main.DepsVersionData[2]
+				end
 			end
 			Main.RobloxVersion = Main.RobloxVersion or game:HttpGet("http://setup.roblox.com/versionQTStudio")
 		end
@@ -16288,7 +17220,9 @@ Main = (function()
 		Main.CreateMainGui()
 		Explorer.Window:Show({ Align = "right", Pos = 1, Size = 0.5, Silent = true })
 		Properties.Window:Show({ Align = "right", Pos = 2, Size = 0.5, Silent = true })
-		Lib.DeferFunc(function() Lib.Window.ToggleSide("right") end)
+		Lib.DeferFunc(function()
+			Lib.Window.ToggleSide("right")
+		end)
 	end
 
 	return Main
