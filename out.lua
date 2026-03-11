@@ -6690,11 +6690,11 @@ local EmbeddedModules = {
 
 							releaseEvent = service.UserInputService.InputEnded:Connect(function(input)
 								if input.UserInputType == Enum.UserInputType.MouseButton1 then
+									updateSelection()
 									releaseEvent:Disconnect()
 									mouseEvent:Disconnect()
 									scrollEvent:Disconnect()
-									obj:SetCopyableSelection()
-									--updateSelection()
+									obj:Refresh()
 								end
 							end)
 
@@ -6996,11 +6996,23 @@ local EmbeddedModules = {
 								self:ResetSelection(true)
 								self:JumpToCursor()
 							end)
-						elseif service.UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+						elseif Lib.IsCtrlDown() then
 							if keycode == keycodes.A then
 								self.SelectionRange = { { 0, 0 }, { #self.Lines[#self.Lines], #self.Lines - 1 } }
 								self:SetCopyableSelection()
 								self:Refresh()
+							elseif keycode == keycodes.C then
+								if self:IsValidRange() then
+									self:SetCopyableSelection()
+									local selectedText = self:GetSelectionText()
+									if #selectedText > 0 then
+										if env.setclipboard then
+											env.setclipboard(selectedText)
+										elseif setclipboard then
+											setclipboard(selectedText)
+										end
+									end
+								end
 							end
 						end
 					end)
